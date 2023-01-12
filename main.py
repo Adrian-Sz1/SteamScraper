@@ -1,13 +1,14 @@
-import json
-import re
-import time
-from decimal import *
-import steam.webauth as wa
-from bs4 import BeautifulSoup
-from openpyxl import load_workbook
-from selenium import webdriver
 from selenium.webdriver.chrome.service import Service as ChromeService
 from webdriver_manager.chrome import ChromeDriverManager
+from openpyxl import load_workbook
+from selenium import webdriver
+from bs4 import BeautifulSoup
+import steam.webauth as wa
+from decimal import *
+import json
+import time
+import re
+
 
 dataFolderPath = "./data/"
 status = None
@@ -156,12 +157,33 @@ class Menus:
         options = ['Log in', 'Check Status', 'Back']
         ConsoleMessages.not_implemented()
 class GameDataScrapper:
+
+    @staticmethod
+    def validateSteamId(steamId):
+        """Checks whether the steamId leads to a valid url
+        Returns game_list if website can be parsed correctly, otherwise returns None"""
+        # TODO: Add an info panel that displays chosen user's details to confirm it's the correct user
+
+        url = "https://steamcommunity.com/id/" + steamId + "/games/?tab=all&sort=playtime"
+        driver = webdriver.Chrome(service=ChromeService(ChromeDriverManager().install()))
+        driver.get(url)
+
+        if driver.current_url != url:
+            ConsoleMessages.ERRORMSG("SteamId not found!", True)
+            return None
+
+        ConsoleMessages.OKMSG("SteamId found!", True)
+        html = BeautifulSoup(driver.page_source, features='html.parser')
+        game_list = html.select("div.gameListRow")
+
+        return game_list
+
     @staticmethod
     def scrapeGameData():
-        # TODO: Add an info panel that displays chosen user's details to confirm it's the correct user
-        # TODO: Add a confirm for the chosen user
-        # TODO: Add a way of creating a new data file[JSON or EXCEL] based on steam id provided
-        user = readInput("Enter steam id you wish to scrape from")
+        # TODO: Add a way of creating a new data file[JSON or EXCEL] based on steam id provided. Each steam id will have its folder with data
+        # TODO: Files should follow the following naming convention. [steamId_dd-mm-yyyy] date represents date of the scrape
+        # TODO: Save previously searched users/steamids in a JSON file but only if they are valid, i.e. return a valid url
+        steamId = readInput("Enter steam id you wish to scrape from")
 
         if currentGameData is not None and len(currentGameData) > 0:
             ConsoleMessages.WARNMSG("Data already exists!\n", True)
@@ -169,18 +191,14 @@ class GameDataScrapper:
 
         ConsoleMessages.INFOMSG("Scraping process initiated. Do not close Chrome process!", True)
 
-        url = "https://steamcommunity.com/id/" + user + "/games/?tab=all&sort=playtime"
-        driver = webdriver.Chrome(service=ChromeService(ChromeDriverManager().install()))
-        driver.get(url)
-        html = BeautifulSoup(driver.page_source, features='html.parser')
-        game_list = html.select("div.gameListRow")
-
-        index = 0
-        all_games = []
+        game_list = GameDataScrapper.validateSteamId(steamId)
+        if game_list is None: return
 
         timeStart = time.perf_counter()
 
-        for game in game_list:
+        index = 0
+        all_games = []
+        for game in game_list: # This code assumes the structure of the html will never change and so is prone to failing when a change occurs
             index += 1
             game_name = game.contents[2].contents[1].contents[1].contents[1].text
 
@@ -195,14 +213,16 @@ class GameDataScrapper:
 
         timeEnd = time.perf_counter()
 
+        ConsoleMessages.INFOMSG("Scraping process finished!", True)
         if index <= 0:  # TODO: Add a way of knowing if the target user's profile is set to private. Use html as a reference?
             ConsoleMessages.ERRORMSG("No games found!", True)
             return
-        ConsoleMessages.OKMSG("[Games found:- " + str(index) + " ]|[ Took:- " + str(round(timeStart-timeEnd, 2)) + " seconds]", False)
+        ConsoleMessages.OKMSG("[Games found:- "
+                              + str(index) + " ]|[ Took:- "
+                              + str(round(timeStart-timeEnd, 2))
+                              + " seconds]", False)
         currentGameData.append(all_games)
         Menus.scrapeExportMenu()
-
-
 
     @staticmethod
     def showLastScrape():
@@ -259,7 +279,6 @@ def parseLoginInfo():  # TODO: Implement input validation
     details = input("Enter your steam username and password separated by a '|' symbol\n")
     print("You entered [" + details + "]")
     return details.split('|')
-
 
 def start():
     print("-:Steam Game Time Scrapper:-")
