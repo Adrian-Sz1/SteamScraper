@@ -4,6 +4,7 @@ from openpyxl import load_workbook
 from selenium import webdriver
 from bs4 import BeautifulSoup
 import steam.webauth as wa
+from requests import *
 from decimal import *
 import json
 import time
@@ -163,20 +164,23 @@ class GameDataScrapper:
         """Checks whether the steamId leads to a valid url
         Returns game_list if website can be parsed correctly, otherwise returns None"""
         # TODO: Add an info panel that displays chosen user's details to confirm it's the correct user
-
+        # TODO: Since we are trying to look for only a url and the div for game.ListRow
+        #  static webpage way of scraping data using requests can be used to check if url is valid
         url = "https://steamcommunity.com/id/" + steamId + "/games/?tab=all&sort=playtime"
         driver = webdriver.Chrome(service=ChromeService(ChromeDriverManager().install()))
         driver.get(url)
 
-        if driver.current_url != url:
-            ConsoleMessages.ERRORMSG("SteamId not found!", True)
+        html = BeautifulSoup(driver.page_source, features='html.parser')
+        game_list_div = html.select("div.gameListRow")
+
+
+        if len(game_list_div) <= 0:
+            ConsoleMessages.ERRORMSG("SteamId not found or profile is private!", True)
             return None
 
         ConsoleMessages.OKMSG("SteamId found!", True)
-        html = BeautifulSoup(driver.page_source, features='html.parser')
-        game_list = html.select("div.gameListRow")
+        return game_list_div
 
-        return game_list
 
     @staticmethod
     def scrapeGameData():
