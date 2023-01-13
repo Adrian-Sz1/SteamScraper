@@ -100,20 +100,23 @@ class Menus:
 
     @staticmethod
     def scrapeExportMenu():
-        # TODO: Add 'Finish' option
-        # TODO: Add 'Sa'
+        # TODO: Add 'Preview' option
 
-        options = ['Export as JSON', 'Export as XLSX', 'Back']
+        options = ['Preview', 'Export as JSON', 'Export as XLSX', 'Don\'t export']  # TODO: Create another menu dedicated to exports?  Export -> as JSON \n as XLSX etc.
         while True:
             ConsoleMessages.INFOMSG("Data is cached and only cleared when application is closed", True)
-            print('Data path: [' + dataFolderPath + ']')
+            print('Data path: [' + ScrapeDataPath + ']')
             Menus.displayOptions(options)
             match readInput(''):
                 case '1':
-                    GameDataScraper.convertToJSON()
+                    ConsoleMessages.not_implemented()
                 case '2':
-                    GameDataScraper.convertToExcel()
+                    GameDataScraper.convertToJSON()
+                    return
                 case '3':
+                    GameDataScraper.convertToExcel()
+                    return
+                case '4':
                     return
                 case _:
                     ConsoleMessages.input_error()
@@ -126,11 +129,11 @@ class Menus:
             Menus.displayOptions(options)
             match readInput(''):
                 case '1':
-                    GameDataScraper.scrapeGameData()
+                    if GameDataScraper.scrapeGameData():
+                        Menus.scrapeExportMenu()
                 case '2':
                     if currentGameData is not None and len(currentGameData) > 0:
                         Menus.scrapeExportMenu()
-                        return
                     GameDataScraper.showLastScrape()
                 case '3':
                     return
@@ -193,20 +196,19 @@ class GameDataScraper:
 
     @staticmethod
     def scrapeGameData():
-        # TODO: Add a way of creating a new data file[JSON or EXCEL] based on steam id provided. Each steam id will have its folder with data
-        # TODO: Files should follow the following naming convention. [steamId_dd-mm-yyyy] date represents date of the scrape
+        # TODO: Each steam id will have its folder with data
         # TODO: Save previously searched users/steamids in a JSON file but only if they are valid, i.e. return a valid url
-        # TODO: Create a history of recent scrape processes
+        # TODO: Create a history of recent scrape events
         steamId = readInput("Enter steam id you wish to scrape from")
 
         if currentGameData is not None and len(currentGameData) > 0:
             ConsoleMessages.WARNMSG("Data already exists!\n", True)
-            if not Menus.confirmPromptMenu(): return
+            if not Menus.confirmPromptMenu(): return False
 
         ConsoleMessages.INFOMSG("Scraping process initiated. Do not close Chrome process!", True)
 
         game_list = GameDataScraper.__validateSteamId(steamId)
-        if game_list is None: return
+        if game_list is None: return False
         timeStart = time.perf_counter()
 
         index = 0
@@ -227,24 +229,24 @@ class GameDataScraper:
         timeEnd = time.perf_counter()
 
         ConsoleMessages.INFOMSG("Scraping process finished!", True)
-        if index <= 0:  # TODO: Add a way of knowing if the target user's profile is set to private. Use html as a reference?
+        if index <= 0:  # TODO: Add a way of differentiating if the target user's profile is set to private or if their game library is private. Use html as a reference?
             ConsoleMessages.ERRORMSG("No games found!", True)
             return
         ConsoleMessages.OKMSG("[Games found:- "
-                              + str(index) + " ]|[ Took:- "
-                              + str(round(timeStart-timeEnd, 2))
-                              + " seconds]", False)
+                              + str(index) + " ]|["
+                              + str(abs(round(timeStart-timeEnd, 5)))
+                              + "s]", False)
         currentGameData.append(all_games)
-        Menus.scrapeExportMenu()
+        return True
 
     @staticmethod
-    def showLastScrape():
+    def showLastScrape():  # TODO: Add in last steamid's details as well
         if currentGameData is None or len(currentGameData) <= 0:
             ConsoleMessages.no_game_data_found()
             return
 
         index = 0
-        for game in currentGameData[0]:  # TODO: make currentGameData have all game data and read recent from json
+        for game in currentGameData[0]:  # TODO: Create a data folder titled 'recent scrape' with the details and gamelist of most recent scrape from which the currentGameData will read when application starts
             print('[' + str(index) + '] ' + game[0] + '|' + str(game[1]))
             index += 1
         print('\n')
@@ -258,10 +260,10 @@ class GameDataScraper:
         games = dict(currentGameData[0])
         games_json = json.dumps(games, indent=2)
 
-        f = open(ScrapeDataPath + GameDataScraper.applyFileName() + ".json", "w")
+        f = open(ScrapeDataPath + "JSON/" + GameDataScraper.applyFileName() + ".json", "w")
         f.write(games_json)
-        f = open(ScrapeDataPath + GameDataScraper.applyFileName() + ".json", "r")
-        print(f.read())
+        f = open(ScrapeDataPath + "JSON/" + GameDataScraper.applyFileName() + ".json", "r")
+        print(f.read()) # TODO: Either don't show the preview or truncate to max 10 lines with ellipsis at the end with the number of rows not visible
         return True
 
     @staticmethod
@@ -275,8 +277,8 @@ class GameDataScraper:
         if len(currentGameData) <= 0:
             ConsoleMessages.no_game_data_found()
             return False
-
-        wb_name = ScrapeDataPath + GameDataScraper.applyFileName() + '.xlsx'
+        # TODO: Create workbook if one doesn't exist already
+        wb_name = ScrapeDataPath + "XLSX/" + GameDataScraper.applyFileName() + '.xlsx'
         wb = load_workbook(wb_name)
         ws = wb.active
 
