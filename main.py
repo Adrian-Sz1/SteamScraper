@@ -6,15 +6,19 @@ from bs4 import BeautifulSoup
 import steam.webauth as wa
 from datetime import date
 from requests import *
-from decimal import *
 import json
 import time
 import re
-
+import os
 
 dataFolderPath = "./data/"
 ScrapeDataPath = dataFolderPath + "ScrapeData/"
 SteamAuthData = dataFolderPath + "SteamAuthData/"
+
+global currentDate, currentSteamId, currentUserName
+currentDate = date.today().strftime("%d-%m-%Y")
+currentSteamId = str()
+currentUserName = str()
 
 status = None
 currentGameData = list()
@@ -75,10 +79,10 @@ class ConsoleMessages:
 class Menus:
 
     @staticmethod
-    def displayOptions(optionsList):
+    def displayOptions(options):
         index = 1
         output = ""
-        for option in optionsList:
+        for option in options:
             output += '[' + str(index) + '] >:' + option + '\n'
             index += 1
         print(output)
@@ -111,7 +115,7 @@ class Menus:
                 case '1':
                     ConsoleMessages.not_implemented()
                 case '2':
-                    GameDataScraper.convertToJSON()
+                    GameDataScraper.createJsonSaveFile()
                     return
                 case '3':
                     GameDataScraper.convertToExcel()
@@ -161,6 +165,25 @@ class Menus:
                     ConsoleMessages.input_error()
 
     @staticmethod
+    def copyOrOverwriteMenu():
+        ConsoleMessages.not_implemented()
+        return
+
+        options = ['Create new', 'Overwrite']
+
+        while True:
+            Menus.displayOptions(options)
+            match readInput(''):
+                case '1':
+                    if Menus.confirmPromptMenu():
+                        Menus.webAuthMenu()
+                case '2':
+                    if Menus.confirmPromptMenu():
+                        Menus.scrapeMenu()
+                case _:
+                    ConsoleMessages.input_error()
+
+    @staticmethod
     def webAuthMenu():  # TODO: Implement
         options = ['Log in', 'Check Status', 'Back']
         ConsoleMessages.not_implemented()
@@ -170,7 +193,7 @@ class GameDataScraper:
     def __validateSteamId(steamId):
         """Checks whether the steamId leads to a valid url
         Returns game_list if website can be parsed correctly, otherwise returns None"""
-        # TODO: Add an info panel that displays chosen user's details to confirm it's the correct user
+
         # TODO: Since we are trying to look for only a url and the div for game.ListRow
         #  static webpage way of scraping data using requests can be used to check if url is valid
         url = "https://steamcommunity.com/id/" + steamId + "/games/?tab=all&sort=playtime"
@@ -184,11 +207,15 @@ class GameDataScraper:
             ConsoleMessages.ERRORMSG("SteamId not found or profile is private!", True)
             return None
 
-        global currentScrapedSteamId
-        currentScrapedSteamId = steamId
-        ConsoleMessages.OKMSG("SteamId found!", True)
-        return game_list_div
+        global currentUserName, currentSteamId
+        currentUserName = html.find('span', "profile_small_header_name").text
+        currentUserName = currentUserName.replace('\n', '')
+        currentUserName = currentUserName.replace('\t', '')
+        currentSteamId = steamId
 
+        ConsoleMessages.OKMSG('Found: [' + currentUserName + ']|[' + currentSteamId + ']', False)
+
+        return game_list_div
 
     @staticmethod
     def scrapeHistory():
@@ -196,9 +223,9 @@ class GameDataScraper:
 
     @staticmethod
     def scrapeGameData():
-        # TODO: Each steam id will have its folder with data
         # TODO: Save previously searched users/steamids in a JSON file but only if they are valid, i.e. return a valid url
         # TODO: Create a history of recent scrape events
+        # TODO: Add a scrape counter per steamId
         steamId = readInput("Enter steam id you wish to scrape from")
 
         if currentGameData is not None and len(currentGameData) > 0:
@@ -222,9 +249,9 @@ class GameDataScraper:
                     ' hrs on record')
                 game_play_time = re.sub(',', '', game_play_time)
             except IndexError:
-                game_play_time = '0'
+                game_play_time = 0.0
 
-            all_games.append([game_name, game_play_time])
+            all_games.append([game_name, float(game_play_time)])
 
         timeEnd = time.perf_counter()
 
@@ -233,7 +260,7 @@ class GameDataScraper:
             ConsoleMessages.ERRORMSG("No games found!", True)
             return
         ConsoleMessages.OKMSG("[Games found:- "
-                              + str(index) + " ]|["
+                              + str(index) + "]|["
                               + str(abs(round(timeStart-timeEnd, 5)))
                               + "s]", False)
         currentGameData.append(all_games)
@@ -252,25 +279,54 @@ class GameDataScraper:
         print('\n')
 
     @staticmethod
-    def convertToJSON():  #TODO: Check if file with specified name already exists and whether the user wants to overwrite it later on add feature that asks user if they want to save as new file e.g. steamId_dd_mm_yyyy(1) or overwrite
+    def createJsonSaveFile():
         if len(currentGameData) <= 0:
             ConsoleMessages.no_game_data_found()
             return False
 
-        games = dict(currentGameData[0])
-        games_json = json.dumps(games, indent=2)
+        # TODO: Check if a file with the specified name already exists - if so, ask whether to overwrite it or create a new
+        #  file with a trailing index e.g. steamId_dd_mm_yyyy(1)
 
-        f = open(ScrapeDataPath + "JSON/" + GameDataScraper.applyFileName() + ".json", "w")
-        f.write(games_json)
-        f = open(ScrapeDataPath + "JSON/" + GameDataScraper.applyFileName() + ".json", "r")
-        print(f.read()) # TODO: Either don't show the preview or truncate to max 10 lines with ellipsis at the end with the number of rows not visible
+        file_name = currentSteamId + '_' + currentDate + '.json'
+        file_dir = ScrapeDataPath + 'Json/' + currentSteamId + '/'
+
+        # NOT FINISHED
+        ###########################################
+        if not os.path.exists(file_dir):
+            os.mkdir(file_dir)
+            if not os.path.exists(file_dir + file_name):
+                print('')  # Do nothing for now
+
+        #    Menus.displayOptions(options)
+        #    Menus.confirmPromptMenu()
+        ###########################################
+
+        total_hours = float()
+        for game in currentGameData[0]: total_hours += game[1]
+
+        save_file = {
+            'details': {
+                'steam_id': currentSteamId,
+                'username': currentUserName,
+                'date_of_scrape': currentDate,
+                'hours_on_record': round(total_hours, 2),
+                'total_games': len(currentGameData[0])
+            },
+            'games': dict(currentGameData[0]),
+        }
+        save_file_json = json.dumps(save_file, indent=2)
+
+        file = open(file_dir + file_name, "w")
+
+        file.write(save_file_json)
+
+        file.close()
         return True
 
     @staticmethod
-    def applyFileName():
-        global currentDate
-        currentDate = date.today().strftime("%d-%m-%Y")
-        return currentScrapedSteamId + '_' + currentDate
+    def createPreviewOfFile():
+        # TODO: Either don't show the preview or truncate to max 10 lines with ellipsis at the end with the number of rows not visible
+        ConsoleMessages.not_implemented()
 
     @staticmethod
     def convertToExcel():
@@ -302,7 +358,6 @@ def parseLoginInfo():  # TODO: Implement input validation
     return details.split('|')
 
 def start():
-
     print("-:Steam Game Time Scrapper:-")
     Menus.mainMenu()
 
