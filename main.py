@@ -105,8 +105,8 @@ class Menus:
     @staticmethod
     def scrapeExportMenu():
         # TODO: Add 'Preview' option
-
         options = ['Preview', 'Export as JSON', 'Export as XLSX', 'Don\'t export']  # TODO: Create another menu dedicated to exports?  Export -> as JSON \n as XLSX etc.
+        
         while True:
             ConsoleMessages.INFOMSG("Data is cached and only cleared when application is closed", True)
             print('Data path: [' + ScrapeDataPath + ']')
@@ -133,6 +133,7 @@ class Menus:
             Menus.displayOptions(options)
             match readInput(''):
                 case '1':
+
                     if GameDataScraper.scrapeGameData():
                         Menus.scrapeExportMenu()
                 case '2':
@@ -236,6 +237,7 @@ class GameDataScraper:
 
         game_list = GameDataScraper.__validateSteamId(steamId)
         if game_list is None: return False
+
         timeStart = time.perf_counter()
 
         index = 0
@@ -333,6 +335,7 @@ class GameDataScraper:
         if len(currentGameData) <= 0:
             ConsoleMessages.no_game_data_found()
             return False
+
         # TODO: Create workbook if one doesn't exist already
         wb_name = ScrapeDataPath + "XLSX/" + GameDataScraper.applyFileName() + '.xlsx'
         wb = load_workbook(wb_name)
@@ -358,6 +361,7 @@ def parseLoginInfo():  # TODO: Implement input validation
     return details.split('|')
 
 def start():
+
     print("-:Steam Game Time Scrapper:-")
     Menus.mainMenu()
 
