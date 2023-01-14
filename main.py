@@ -11,17 +11,68 @@ import time
 import re
 import os
 
+#region Global Variables
 dataFolderPath = "./data/"
 ScrapeDataPath = dataFolderPath + "ScrapeData/"
 SteamAuthData = dataFolderPath + "SteamAuthData/"
 
-global currentDate, currentSteamId, currentUserName
+global currentDate, currentSteamId, currentUserName, history
 currentDate = date.today().strftime("%d-%m-%Y")
 currentSteamId = str()
 currentUserName = str()
+history = list()
 
 status = None
 currentGameData = list()
+#endregion
+
+#region Web Authentication
+# For now ignore WebAuth as it is not fully fleshed out
+#################
+class WebAuth:
+
+    def parseLoginInfo(self):  # TODO: Implement input validation
+        """Reads user input and parses it into username and password strings"""
+
+        details = input("Enter your steam username and password separated by a '|' symbol\n")
+        print("You entered [" + details + "]")
+        return details.split('|')
+
+    def login(self):
+        accountDetails = WebAuth.parseLoginInfo()
+        user = wa.WebAuth(accountDetails[0])  # Enters the username
+
+        try:
+            user.login(password=accountDetails[1])
+        except (wa.LoginIncorrect, wa.CaptchaRequired, wa.TwoFactorCodeRequired) as exp:
+            if isinstance(exp, wa.LoginIncorrect):
+                print('Password incorrect!')
+            if isinstance(exp, wa.CaptchaRequired):
+                print(user.captcha_url)
+                captcha = readInput("Enter Captcha code: ")
+                user.login(password=accountDetails[1], captcha=captcha)
+            if isinstance(exp, wa.TwoFactorCodeRequired):
+                print("Steam Guard Authentication code required!")
+                code = readInput("Steam Guard Code: ")
+                user.login(password=accountDetails[1], twofactor_code=code)
+
+        user.session.get('https://store.steampowered.com/account/history/')
+
+        ConsoleMessages.OKMSG("Log in successful!", True) \
+            if user.logged_on \
+            else ConsoleMessages.ERRORMSG("Log in failed!", True)
+        return user
+
+    def showStatus(user):
+        if user is None or user.logged_on is False:
+            print("Not currently signed in")
+            return
+        else:
+            print("Logged in as [" + str(user.steam_id) + "]")
+            print("Session ID [" + str(user.session_id) + "]")
+#################
+#endregion
+
 
 class ConsoleMessages:
     colours = {
@@ -54,28 +105,20 @@ class ConsoleMessages:
 
     @staticmethod
     def ERRORMSG(message: str, haveKey: bool):
-        if haveKey:
-            print('\n' + ConsoleMessages.colours['FAIL'] + "[FAIL]:" + message + ConsoleMessages.colours['ENDC'] + '\n')
-        else:
-            print('\n' + ConsoleMessages.colours['FAIL'] + message + ConsoleMessages.colours['ENDC'] + '\n')
+        if haveKey: print('\n' + ConsoleMessages.colours['FAIL'] + "[FAIL]:" + message + ConsoleMessages.colours['ENDC'] + '\n')
+        else: print('\n' + ConsoleMessages.colours['FAIL'] + message + ConsoleMessages.colours['ENDC'] + '\n')
     @staticmethod
     def WARNMSG(message: str, haveKey: bool):
-        if haveKey:
-            print('\n' + ConsoleMessages.colours['WARNING'] + "[WARN]:" + message + ConsoleMessages.colours['ENDC'] + '\n')
-        else:
-            print('\n' + ConsoleMessages.colours['WARNING'] + message + ConsoleMessages.colours['ENDC'] + '\n')
+        if haveKey: print('\n' + ConsoleMessages.colours['WARNING'] + "[WARN]:" + message + ConsoleMessages.colours['ENDC'] + '\n')
+        else: print('\n' + ConsoleMessages.colours['WARNING'] + message + ConsoleMessages.colours['ENDC'] + '\n')
     @staticmethod
     def OKMSG(message: str, haveKey: bool):
-        if haveKey:
-            print('\n' + ConsoleMessages.colours['OKGREEN'] + "[OKAY]:" + message + ConsoleMessages.colours['ENDC'] + '\n')
-        else:
-            print('\n' + ConsoleMessages.colours['OKGREEN'] + message + ConsoleMessages.colours['ENDC'] + '\n')
+        if haveKey: print('\n' + ConsoleMessages.colours['OKGREEN'] + "[OKAY]:" + message + ConsoleMessages.colours['ENDC'] + '\n')
+        else: print('\n' + ConsoleMessages.colours['OKGREEN'] + message + ConsoleMessages.colours['ENDC'] + '\n')
     @staticmethod
     def INFOMSG(message: str, haveKey: bool):
-        if haveKey:
-            print('\n' + ConsoleMessages.colours['INFOCYAN'] + "[INFO]:" + message + ConsoleMessages.colours['ENDC'] + '\n')
-        else:
-            print('\n' + ConsoleMessages.colours['INFOCYAN'] + message + ConsoleMessages.colours['ENDC'] + '\n')
+        if haveKey: print('\n' + ConsoleMessages.colours['INFOCYAN'] + "[INFO]:" + message + ConsoleMessages.colours['ENDC'] + '\n')
+        else: print('\n' + ConsoleMessages.colours['INFOCYAN'] + message + ConsoleMessages.colours['ENDC'] + '\n')
 class Menus:
 
     @staticmethod
@@ -104,7 +147,6 @@ class Menus:
 
     @staticmethod
     def scrapeExportMenu():
-        # TODO: Add 'Preview' option
         options = ['Preview', 'Export as JSON', 'Export as XLSX', 'Don\'t export']  # TODO: Create another menu dedicated to exports?  Export -> as JSON \n as XLSX etc.
         
         while True:
@@ -113,9 +155,9 @@ class Menus:
             Menus.displayOptions(options)
             match readInput(''):
                 case '1':
-                    ConsoleMessages.not_implemented()
+                    GameDataScraper.createFilePreview()
                 case '2':
-                    GameDataScraper.createJsonSaveFile()
+                    GameDataScraper.generateJsonDataFile(GameDataScraper.generateJsonData())
                     return
                 case '3':
                     GameDataScraper.convertToExcel()
@@ -133,8 +175,8 @@ class Menus:
             Menus.displayOptions(options)
             match readInput(''):
                 case '1':
-
                     if GameDataScraper.scrapeGameData():
+                        GameDataScraper.generateJsonData()  # Ended here
                         Menus.scrapeExportMenu()
                 case '2':
                     if currentGameData is not None and len(currentGameData) > 0:
@@ -219,20 +261,26 @@ class GameDataScraper:
         return game_list_div
 
     @staticmethod
-    def scrapeHistory():
+    def scrapeHistory():  # TODO: Add the ability to preview each of the files in history
+        """Displays 10 recent scrapes, includes file"""
+        global history
+        for file in history:
+            print(file)
+
         ConsoleMessages.not_implemented()
 
     @staticmethod
     def scrapeGameData():
+        # TODO: Add the ability for the user to type in multiple steamids and have them be scraped sequentially
+        # TODO: Following up on the above todo, add a watchlist which the user can create to scrape specific group of steamids sequentially
         # TODO: Save previously searched users/steamids in a JSON file but only if they are valid, i.e. return a valid url
-        # TODO: Create a history of recent scrape events
-        # TODO: Add a scrape counter per steamId
+        # TODO: Create a dict resembling a database of users and their scrapes
         steamId = readInput("Enter steam id you wish to scrape from")
 
         if currentGameData is not None and len(currentGameData) > 0:
             ConsoleMessages.WARNMSG("Data already exists!\n", True)
             if not Menus.confirmPromptMenu(): return False
-
+        currentGameData.clear()
         ConsoleMessages.INFOMSG("Scraping process initiated. Do not close Chrome process!", True)
 
         game_list = GameDataScraper.__validateSteamId(steamId)
@@ -269,23 +317,44 @@ class GameDataScraper:
         return True
 
     @staticmethod
-    def showLastScrape():  # TODO: Add in last steamid's details as well
+    def showLastScrape():  # TODO: Refactor [Possibly Deprecated]
+        GameDataScraper.scrapeHistory() # Temporary
         if currentGameData is None or len(currentGameData) <= 0:
             ConsoleMessages.no_game_data_found()
             return
 
         index = 0
-        for game in currentGameData[0]:  # TODO: Create a data folder titled 'recent scrape' with the details and gamelist of most recent scrape from which the currentGameData will read when application starts
+        for game in currentGameData[0]:
             print('[' + str(index) + '] ' + game[0] + '|' + str(game[1]))
             index += 1
         print('\n')
 
     @staticmethod
-    def createJsonSaveFile():
+    def generateJsonData():
         if len(currentGameData) <= 0:
             ConsoleMessages.no_game_data_found()
             return False
 
+        total_hours = float()
+        for game in currentGameData[0]: total_hours += game[1]
+
+        data = {
+            'details': {
+                'steam_id': currentSteamId,
+                'username': currentUserName,
+                'date_of_scrape': currentDate,
+                'hours_on_record': round(total_hours, 2),
+                'total_games': len(currentGameData[0])
+            },
+            'games': dict(currentGameData[0]),
+        }
+        global history
+        history.append(currentSteamId + '_' + currentDate + '.json')
+
+        return data
+
+    @staticmethod
+    def generateJsonDataFile(jsonData):  # TODO: If steamId doesn't match the username, assume that the steam user has changed their username. Rename the folder to the current steam username
         # TODO: Check if a file with the specified name already exists - if so, ask whether to overwrite it or create a new
         #  file with a trailing index e.g. steamId_dd_mm_yyyy(1)
 
@@ -298,25 +367,11 @@ class GameDataScraper:
             os.mkdir(file_dir)
             if not os.path.exists(file_dir + file_name):
                 print('')  # Do nothing for now
-
         #    Menus.displayOptions(options)
         #    Menus.confirmPromptMenu()
         ###########################################
 
-        total_hours = float()
-        for game in currentGameData[0]: total_hours += game[1]
-
-        save_file = {
-            'details': {
-                'steam_id': currentSteamId,
-                'username': currentUserName,
-                'date_of_scrape': currentDate,
-                'hours_on_record': round(total_hours, 2),
-                'total_games': len(currentGameData[0])
-            },
-            'games': dict(currentGameData[0]),
-        }
-        save_file_json = json.dumps(save_file, indent=2)
+        save_file_json = json.dumps(jsonData, indent=2)
 
         file = open(file_dir + file_name, "w")
 
@@ -326,12 +381,18 @@ class GameDataScraper:
         return True
 
     @staticmethod
-    def createPreviewOfFile():
-        # TODO: Either don't show the preview or truncate to max 10 lines with ellipsis at the end with the number of rows not visible
-        ConsoleMessages.not_implemented()
+    def createFilePreview():
+        index = 0
+        print('[' + currentSteamId + ']\n')
+        for line in currentGameData[0]:
+            if index >= 9: break
+            print('[' + str(index) + '] ' + line[0] + '|' + str(line[1]))
+            index += 1
+        print('{...' + str(abs(index-len(currentGameData[0]))) + ' more games}')
+        print('\n')
 
     @staticmethod
-    def convertToExcel():
+    def convertToExcel(): # TODO: Refactor
         if len(currentGameData) <= 0:
             ConsoleMessages.no_game_data_found()
             return False
@@ -353,50 +414,9 @@ class GameDataScraper:
         wb.close()
         return True
 
-def parseLoginInfo():  # TODO: Implement input validation
-    """Reads user input and parses it into username and password strings"""
-
-    details = input("Enter your steam username and password separated by a '|' symbol\n")
-    print("You entered [" + details + "]")
-    return details.split('|')
-
 def start():
-
-    print("-:Steam Game Time Scrapper:-")
+    print("-:Steam Scraper:-")
     Menus.mainMenu()
-
-def login():
-    accountDetails = parseLoginInfo()
-    user = wa.WebAuth(accountDetails[0])  # Enters the username
-
-    try:
-        user.login(password=accountDetails[1])
-    except (wa.LoginIncorrect, wa.CaptchaRequired, wa.TwoFactorCodeRequired) as exp:
-        if isinstance(exp, wa.LoginIncorrect):
-            print('Password incorrect!')
-        if isinstance(exp, wa.CaptchaRequired):
-            print(user.captcha_url)
-            captcha = readInput("Enter Captcha code: ")
-            user.login(password=accountDetails[1], captcha=captcha)
-        if isinstance(exp, wa.TwoFactorCodeRequired):
-            print("Steam Guard Authentication code required!")
-            code = readInput("Steam Guard Code: ")
-            user.login(password=accountDetails[1], twofactor_code=code)
-
-    user.session.get('https://store.steampowered.com/account/history/')
-
-    ConsoleMessages.OKMSG("Log in successful!", True) \
-        if user.logged_on \
-        else ConsoleMessages.ERRORMSG("Log in failed!", True)
-    return user
-
-def showStatus(user):
-    if user is None or user.logged_on is False:
-        print("Not currently signed in")
-        return
-    else:
-        print("Logged in as [" + str(user.steam_id) + "]")
-        print("Session ID [" + str(user.session_id) + "]")
 
 def readInput(prompt):
     user_input = input(prompt + '\n>>> ')
