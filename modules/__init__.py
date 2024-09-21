@@ -1,7 +1,5 @@
-import json
 from datetime import date
-import os
-#region Global Variables
+
 dataFolderPath = "../data/"
 ScrapeDataPath = dataFolderPath + "ScrapeData/"
 SteamAuthData = dataFolderPath + "SteamAuthData/"

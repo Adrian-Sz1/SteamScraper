@@ -11,13 +11,6 @@ RESOLVE_VANITY_URL = 'https://api.steampowered.com/ISteamUser/ResolveVanityURL/v
 RESOLVE_VANITY_URL_SUFFIX = '&vanityurl='
 
 
-class SupportedFileType(Enum):
-    xlsx = 1
-    csv = 2
-    json = 3
-    raw = 4
-
-
 class OutputUserStatus(Enum):
     NOT_FOUND = 'User not found'
     ACCOUNT_PRIVATE = 'Account is private'
