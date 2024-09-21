@@ -1,7 +1,7 @@
 # Steam User Scraper
 
 ## About
-Steam User Scraper (SUS) is a Command-Line tool (GUI WiP) designed to scrape a user's play time. The basic premise is to allow a given user to rapidly retreive their or any other publicly accessible user's/users' profile statistics for data visualization or tracking. 
+Steam User Scraper (SUS) is a GUI based program designed to scrape a user's publicly available profile data, game stats and inventory for data visualization or tracking. 
 SUS uses Steam's Public API to authorize and send requests which it then processes and parses in to easy to read formats such as .csv or .xslx for use in Excel or JSON for other applications. SUS features a settings file to allow for storing preferences to speed up the steam authentication process and preferred file formats. The results outputted by SUS are by default ranked in descending order (Highest -> Lowest) in terms of hours played.
 
 ### Primary Features
@@ -17,6 +17,7 @@ SUS uses Steam's Public API to authorize and send requests which it then process
 
 ### Limitations
 - Only users with public profiles are supported
+- Steam's public API allows for a maximum of 100,000 api calls per day/24 hours. On average for a user it may take up to 3 api calls to fetch the necessary details which could potentially limit the daily limit to 30,000 unique user searches per day.
 
 ## Installation
 
@@ -24,11 +25,8 @@ SUS uses Steam's Public API to authorize and send requests which it then process
 #### Python Version
   - 3.11.9 and above
 #### Packages
-- ```Selenium```
-- ```ChromeDriverManager```
 - ```openyxl```
 - ```bs4```
-- ```Steam```
 - ```PySimpleGUI```
 
 ## How-To-Use
