@@ -6,7 +6,7 @@ import modules.programsettings as ps
 
 def initialize():
     readSettings()
-    modules.gui.create_window(ps.output_folder_path, ps.output_file_type, ps.create_sub_folders, ps.previous_parameters, ps.steam_api_key)
+    modules.gui.create_window(ps.output_folder_path, ps.output_file_type, ps.create_sub_folders, ps.previous_parameters, ps.steam_api_key, ps.search_options)
 
     
 if __name__ == "__main__":

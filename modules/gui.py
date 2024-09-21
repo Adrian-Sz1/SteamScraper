@@ -7,7 +7,9 @@ def create_window(
         output_file_type: str,
         create_sub_folders: bool,
         previous_parameters: str,
-        steam_api_key: str):
+        steam_api_key: str,
+        search_for_options: dict
+        ):
     FONT_NAME = 'calibri'
 
     FONT_HEADING = (FONT_NAME, 15)
@@ -26,7 +28,11 @@ def create_window(
                         sg.FolderBrowse()], [sg.Checkbox('Create a sub-folder for each user', key='user_sub_folder', enable_events=True, font=FONT_OPTION,
                                                          default=create_sub_folders,
                                                          tooltip='Each user has their own folder generated which their data is outputted in to')],
-                       [sg.Checkbox('Inventory'), sg.Checkbox('Games'), sg.Checkbox('Friends'), sg.Checkbox('Reviews'), sg.Checkbox('Profile Comments')],
+                       [sg.Checkbox('Inventory', key='inventory_checkbox', enable_events=True, default=search_for_options['include_inventory']),
+                        sg.Checkbox('Games', key='games_checkbox', enable_events=True, default=search_for_options['include_games']),
+                        sg.Checkbox('Friends', key='friends_checkbox', enable_events=True, default=search_for_options['include_friends']),
+                        sg.Checkbox('Reviews', key='reviews_checkbox', enable_events=True, default=search_for_options['include_reviews']),
+                        sg.Checkbox('Profile Comments', key='profile_comments_checkbox', enable_events=True, default=search_for_options['include_profile_comments'])],
                        [sg.Button('Save Preferences', visible=False, key='save_button'), sg.Text('', key='preferences_info_text')],
                        [sg.Frame('Results', [[sg.Text('', key='result_output',size=(58, 5))]])]]
     parameters_layout = [[sg.Text('Parameters', font=FONT_HEADING), sg.Push()], [sg.HorizontalSeparator()],
@@ -54,14 +60,22 @@ def create_window(
 
             window['save_button'].Update(visible=False)
 
-            ps.writeSettings(file_type, output_folder, user_sub_folder, current_parameters, steam_api_key_input)
-        elif event in '-OPTION MENU-output_folder_pathuser_sub_folderparameters_multilinesteam_api_key':
+            search_options = {
+                "include_inventory": window['inventory_checkbox'].Get(),
+                "include_games": window['games_checkbox'].Get(),
+                "include_friends": window['friends_checkbox'].Get(),
+                "include_reviews": window['reviews_checkbox'].Get(),
+                "include_profile_comments": window['profile_comments_checkbox'].Get()
+            }
+
+            ps.writeSettings(file_type, output_folder, user_sub_folder, current_parameters, steam_api_key_input, search_options)
+        elif event in '-OPTION MENU-output_folder_pathuser_sub_folderparameters_multilinesteam_api_keyinventory_checkboxgames_checkboxfriends_checkboxreviews_checkboxprofile_comments_checkbox':
             window['preferences_info_text'].Update(text_color='orange')
             window['preferences_info_text'].Update('Unsaved Changes')
             window['save_button'].Update(visible=True)
 
         if event == 'Start':
-            window['result_output'].Update(c.start(window['steam_api_key'].Get(), window['parameters_multiline'].Get(), window['output_folder_path'].Get()))
+            window['result_output'].Update(c.start(window['steam_api_key'].Get(), window['parameters_multiline'].Get(), window['output_folder_path'].Get(), ps.search_options))
 
         if event == 'validate_api_key':
             api_test_result_element = window['api_key_test_result']

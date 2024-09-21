@@ -1,24 +1,12 @@
 import json
 import os
 import time
-
-from selenium.webdriver.chrome.service import Service as ChromeService
-from webdriver_manager.chrome import ChromeDriverManager
-from selenium import webdriver
 from bs4 import BeautifulSoup
 import requests
 import modules.helpers as helpers
 import modules as modules
+import modules.programsettings as ps
 
-URL_PREFIX = 'https://steamcommunity.com/id/'
-URL_SUFFIX = '/games/?tab=all&sort=playtime'
-
-API_BASE_URL = 'http://api.steampowered.com/IPlayerService/GetOwnedGames/v0001/?key='
-API_URL_PREFIX = '&steamid='
-API_URL_SUFFIX = '&format=json'
-
-RESOLVE_VANITY_URL = 'https://api.steampowered.com/ISteamUser/ResolveVanityURL/v1/?key='
-RESOLVE_VANITY_URL_SUFFIX = '&vanityurl='
 
 #driver = webdriver.Chrome(service=ChromeService(ChromeDriverManager(driver_version='128.0.6613.137').install()))
 
@@ -56,23 +44,35 @@ def validate_api_key(api_key: str):
     return r.status_code == 200
 
 
-def start(api_key: str, usernames: str, folder_path: str):
+def start(api_key: str, usernames: str, folder_path: str, search_options: dict):
     usernames = parseInput(usernames)
 
     output_dict.clear()
 
     for username in usernames:
-        url = URL_PREFIX + username
+        url = helpers.URL_PREFIX + username
 
         r = requests.get(url)
         html = BeautifulSoup(r.content, features='html.parser')
 
         if html.find(string='The specified profile could not be found.'):
             output_dict[username] = helpers.OutputUserStatus.NOT_FOUND.value
+            continue
 
-        else:
-            output_dict[username] = helpers.OutputUserStatus.SUCCESSFUL.value
-            scrapeGameData(api_key, username, folder_path)
+        output_dict[username] = helpers.OutputUserStatus.SUCCESSFUL.value
+
+        if search_options['include_inventory']:
+            print('include_inventory')
+        if search_options['include_games']:
+            print('include_games')
+        if search_options['include_friends']:
+            print('include_friends')
+        if search_options['include_reviews']:
+            print('include_reviews')
+        if search_options['include_profile_comments']:
+            print('include_profile_comments')
+
+        scrapeGameData(api_key, username, folder_path)
 
     return parseDictToString(output_dict)
 
@@ -137,14 +137,15 @@ def convertToExcel():  # TODO: Refactor
 
 def generateJsonDataFile(steamId: str, jsonData, folder_path: str):
     file_name = steamId + '_' + modules.currentDate + '.json'
-    file_dir = folder_path + '/Json/' + steamId+'/'
+    if ps.create_sub_folders:
+        file_dir = folder_path + '/Json/' + steamId+'/'
+    else:
+        file_dir = folder_path + '/Json/'
 
-    # NOT FINISHED
-    ###########################################
     if not os.path.exists(file_dir):
         os.makedirs(file_dir)
-        if not os.path.exists(file_dir + file_name):
-            print('')  # Do nothing for now
+    #    if not os.path.exists(file_dir + file_name):
+    #        print('')  # Do nothing for now
     #    Menus.displayOptions(options)
     #    Menus.confirmPromptMenu()
     ###########################################
