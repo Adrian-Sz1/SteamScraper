@@ -90,50 +90,50 @@ def parseInput(input_usernames: str):
     return input_usernames.split('\n')
 
 
-def generateJsonData():
-    if len(modules.currentGameData) <= 0:
-        ConsoleMessages.no_game_data_found()
-        return False
-
-    total_hours = float()
-    for game in currentGameData[0]: total_hours += game[1]
-
-    data = {
-        'details': {
-            'steam_id': currentSteamId,
-            'username': currentUserName,
-            'date_of_scrape': currentDate,
-            'hours_on_record': round(total_hours, 2),
-            'total_games': len(currentGameData[0])
-        },
-        'games': dict(currentGameData[0]),
-    }
-    global history
-    history.append(currentSteamId + '_' + currentDate + '.json')
-
-    return data
-
-def convertToExcel():  # TODO: Refactor
-    if len(currentGameData) <= 0:
-        ConsoleMessages.no_game_data_found()
-        return False
-
-    # TODO: Create workbook if one doesn't exist already
-    wb_name = ScrapeDataPath + "XLSX/" + GameDataScraper.applyFileName() + '.xlsx'
-    wb = load_workbook(wb_name)
-    ws = wb.active
-
-    row = 2
-
-    for game in currentGameData:
-        ws['B' + str(row)] = game[0]
-        ws['C' + str(row + 1)] = float(game[1])
-        row += 1
-    # ws.column_dimensions['C'].number_format = u'#,##0.00€'
-
-    wb.save(wb_name)
-    wb.close()
-    return True
+# def generateJsonData():
+#     if len(modules.currentGameData) <= 0:
+#         ConsoleMessages.no_game_data_found()
+#         return False
+#
+#     total_hours = float()
+#     for game in currentGameData[0]: total_hours += game[1]
+#
+#     data = {
+#         'details': {
+#             'steam_id': currentSteamId,
+#             'username': currentUserName,
+#             'date_of_scrape': currentDate,
+#             'hours_on_record': round(total_hours, 2),
+#             'total_games': len(currentGameData[0])
+#         },
+#         'games': dict(currentGameData[0]),
+#     }
+#     global history
+#     history.append(currentSteamId + '_' + currentDate + '.json')
+#
+#     return data
+#
+# def convertToExcel():  # TODO: Refactor
+#     if len(currentGameData) <= 0:
+#         ConsoleMessages.no_game_data_found()
+#         return False
+#
+#     # TODO: Create workbook if one doesn't exist already
+#     wb_name = ScrapeDataPath + "XLSX/" + GameDataScraper.applyFileName() + '.xlsx'
+#     wb = load_workbook(wb_name)
+#     ws = wb.active
+#
+#     row = 2
+#
+#     for game in currentGameData:
+#         ws['B' + str(row)] = game[0]
+#         ws['C' + str(row + 1)] = float(game[1])
+#         row += 1
+#     # ws.column_dimensions['C'].number_format = u'#,##0.00€'
+#
+#     wb.save(wb_name)
+#     wb.close()
+#     return True
 
 def generateJsonDataFile(steamId: str, jsonData, folder_path: str):
     file_name = steamId + '_' + modules.currentDate + '.json'
