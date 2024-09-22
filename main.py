@@ -1,4 +1,3 @@
-
 import modules.gui
 from modules.programsettings import readSettings
 import modules.programsettings as ps

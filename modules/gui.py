@@ -68,7 +68,7 @@ def create_window(
                 "include_profile_comments": window['profile_comments_checkbox'].Get()
             }
 
-            ps.writeSettings(file_type, output_folder, user_sub_folder, current_parameters, steam_api_key_input, search_options)
+            ps.updateSettings(file_type, output_folder, user_sub_folder, current_parameters, steam_api_key_input, search_options)
         elif event in '-OPTION MENU-output_folder_pathuser_sub_folderparameters_multilinesteam_api_keyinventory_checkboxgames_checkboxfriends_checkboxreviews_checkboxprofile_comments_checkbox':
             window['preferences_info_text'].Update(text_color='orange')
             window['preferences_info_text'].Update('Unsaved Changes')
