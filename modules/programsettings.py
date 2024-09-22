@@ -1,5 +1,8 @@
 import json
 import os
+import logging
+
+logger = logging.getLogger(__name__)
 
 # region settings
 appdata_path = ''
@@ -27,12 +30,24 @@ def setUsernameOnOS():
         OS_USERNAME = os.getenv("USERNAME")
 
 
+def getAppDataPath():
+    setUsernameOnOS()
+    return 'C:/Users/' + OS_USERNAME + '/AppData/Roaming/' + APP_NAME
+
+
 def tryAppendNewUserToCache(display_name: str, steam_id: str):
     if str.isspace(display_name) or str.isspace(steam_id):
         return
 
     searched_users_dict[display_name] = steam_id
     writeJsonFile(appdata_path + '/' + SEARCHED_USERS_NAME, searched_users_dict, 'w')
+
+
+def readSearchedUsersFile():
+    if os.path.isfile(appdata_path + '/' + SEARCHED_USERS_NAME):
+        global searched_users_dict
+        file = open(appdata_path + '/' + SEARCHED_USERS_NAME, "r")
+        searched_users_dict = json.load(file)
 
 
 def validateSettingsFileExists():
@@ -44,7 +59,9 @@ def validateSettingsFileExists():
 
 def createDefaultSettingsFile():
     if not os.path.exists(appdata_path):
+        logger.warning('Appdata directory does not exist')
         os.mkdir(appdata_path)
+        logger.info('Appdata directory created')
     settings_data = {
         "preferences": {
             "output_folder_path": appdata_path + '/' + 'data',
@@ -61,6 +78,7 @@ def createDefaultSettingsFile():
             }
         }
     }
+    logger.info('Creating default settings file in ' + '['+appdata_path + '/' + SETTINGS_FILE_NAME+']')
     writeJsonFile(appdata_path + '/' + SETTINGS_FILE_NAME, settings_data, 'x')
 
 
@@ -93,10 +111,12 @@ def writeJsonFile(path: str, content: dict, mode: str):
     file.write(settings_data_json)
 
     file.close()
+    logger.info('File write of ' + '[' + path + '] successful')
 
 
 def readSettings():
     if not validateSettingsFileExists():
+        logger.warning('Settings file does not exist')
         createDefaultSettingsFile()
 
     global output_folder_path, output_file_type, create_sub_folders, previous_parameters, steam_api_key, search_options
@@ -115,4 +135,5 @@ def readSettings():
     search_options = settings_data['preferences']['search_options']
 
     file.close()
+    logger.info('Read of ' + '[' + appdata_path + '/' + SETTINGS_FILE_NAME + '] successful')
 

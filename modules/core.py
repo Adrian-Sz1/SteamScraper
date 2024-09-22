@@ -6,37 +6,11 @@ import requests
 import modules.helpers as helpers
 import modules as modules
 import modules.programsettings as ps
+import logging
 
-
-#driver = webdriver.Chrome(service=ChromeService(ChromeDriverManager(driver_version='128.0.6613.137').install()))
+logger = logging.getLogger(__name__)
 
 output_dict = {}  # username : error/success result
-
-
-def __validateSteamId(steamId):
-    """Checks whether the steamId leads to a valid url
-    Returns game_list html div if website can be parsed correctly, otherwise returns None"""
-
-    # TODO: Since we are trying to look for only a url and the div for game.ListRow
-    #  static webpage way of scraping data using requests can be used to check if url is valid
-    url = "https://steamcommunity.com/id/" + steamId + "/games/?tab=all&sort=playtime"
-
-    #html = BeautifulSoup(driver.page_source, features='html.parser')
-    #game_list_div = html.select("div.gameListRow")
-
-    #if len(game_list_div) <= 0:
-        #ConsoleMessages.ERRORMSG("SteamId not found or profile is private!", True)
-        #return None
-
-    #global currentUserName, currentSteamId
-    #currentUserName = html.find('span', "profile_small_header_name").text
-    #currentUserName = currentUserName.replace('\n', '')
-    #currentUserName = currentUserName.replace('\t', '')
-    #currentSteamId = steamId
-
-    #ConsoleMessages.OKMSG('Found: [' + currentUserName + ']|[' + currentSteamId + ']', False)
-
-    #return game_list_div
 
 
 def validate_api_key(api_key: str):
@@ -46,7 +20,7 @@ def validate_api_key(api_key: str):
 
 def start(api_key: str, usernames: str, folder_path: str, search_options: dict):
     usernames = parseInput(usernames)
-
+    ps.readSearchedUsersFile()
     output_dict.clear()
 
     for username in usernames:
@@ -64,7 +38,7 @@ def start(api_key: str, usernames: str, folder_path: str, search_options: dict):
         if search_options['include_inventory']:
             print('include_inventory')
         if search_options['include_games']:
-            print('include_games')
+            scrapeGameData(api_key, username, folder_path)
         if search_options['include_friends']:
             print('include_friends')
         if search_options['include_reviews']:
@@ -72,7 +46,6 @@ def start(api_key: str, usernames: str, folder_path: str, search_options: dict):
         if search_options['include_profile_comments']:
             print('include_profile_comments')
 
-        scrapeGameData(api_key, username, folder_path)
 
     return parseDictToString(output_dict)
 
@@ -161,12 +134,11 @@ def generateJsonDataFile(steamId: str, jsonData, folder_path: str):
 
 
 def scrapeGameData(api_key: str, steamId: str, folder_path: str):
-    #currentGameData.clear()
-    timeStart = time.perf_counter()
-
+    logger.info('Scraping game data for user ' + steamId)
     url = ''
     # Check if we are dealing with a vanity url or an actual steam id
     if not steamId.isalnum() and not steamId.__len__() == 17:
+        logger.info(steamId + ' is alphanumeric fetching steam64id...')
         if steamId not in ps.searched_users_dict:
             url = 'https://api.steampowered.com/ISteamUser/ResolveVanityURL/v1/?key=' + api_key + '&vanityurl=' + steamId
             r = requests.get(url)
@@ -176,8 +148,12 @@ def scrapeGameData(api_key: str, steamId: str, folder_path: str):
             ps.tryAppendNewUserToCache(steamId, gg['steamid'])
 
             steamId = gg['steamid']
+            logger.info(steamId + ' fetched from Steam API')
+
         else:
+            logger.info(steamId + ' found in search history')
             steamId = ps.searched_users_dict[steamId]
+
 
     url = 'http://api.steampowered.com/IPlayerService/GetOwnedGames/v0001/?key=' + api_key + '&steamid=' + steamId + '&include_appinfo=false&include_played_free_games=true&format=json'
 
