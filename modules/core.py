@@ -19,6 +19,8 @@ def validate_api_key(api_key: str):
 
 
 def start(api_key: str, usernames: str, folder_path: str, search_options: dict):
+    logger.info('Scraping has started with the following attributes: usernames="' + usernames + '" folder_path="' + folder_path + '" search_options=')
+
     usernames = parseInput(usernames)
     ps.readSearchedUsersFile()
     output_dict.clear()
@@ -60,7 +62,7 @@ def parseDictToString(unparsedOutput: dict):
 
 
 def parseInput(input_usernames: str):
-    return input_usernames.split('\n')
+    return input_usernames.split(',')
 
 
 # def generateJsonData():
@@ -130,6 +132,9 @@ def generateJsonDataFile(steamId: str, jsonData, folder_path: str):
     file.write(save_file_json)
 
     file.close()
+
+    logger.info('Json data file created for ' + steamId + ' in "' + folder_path + '"')
+
     return True
 
 
@@ -137,7 +142,7 @@ def scrapeGameData(api_key: str, steamId: str, folder_path: str):
     logger.info('Scraping game data for user ' + steamId)
     url = ''
     # Check if we are dealing with a vanity url or an actual steam id
-    if not steamId.isalnum() and not steamId.__len__() == 17:
+    if steamId.isalnum() or not steamId.__len__() == 17:
         logger.info(steamId + ' is alphanumeric fetching steam64id...')
         if steamId not in ps.searched_users_dict:
             url = 'https://api.steampowered.com/ISteamUser/ResolveVanityURL/v1/?key=' + api_key + '&vanityurl=' + steamId
@@ -156,8 +161,12 @@ def scrapeGameData(api_key: str, steamId: str, folder_path: str):
 
 
     url = 'http://api.steampowered.com/IPlayerService/GetOwnedGames/v0001/?key=' + api_key + '&steamid=' + steamId + '&include_appinfo=false&include_played_free_games=true&format=json'
+    logger.info('Sending Owned Games request for user with id "' + steamId + '"')
 
     r = requests.get(url)
+
+    logger.info('Owned Games status code=' + str(r.status_code))
+
     generateJsonDataFile(steamId, r.json(), folder_path)
 
 # Get game names using appids https://store.steampowered.com/api/appdetails?appids=2630
