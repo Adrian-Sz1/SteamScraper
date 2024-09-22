@@ -64,3 +64,29 @@ class ConsoleMessages:
     def INFOMSG(message: str, haveKey: bool):
         if haveKey: print('\n' + ConsoleMessages.colours['INFOCYAN'] + "[INFO]:" + message + ConsoleMessages.colours['ENDC'] + '\n')
         else: print('\n' + ConsoleMessages.colours['INFOCYAN'] + message + ConsoleMessages.colours['ENDC'] + '\n')
+
+
+def listToString(content: list, delimiter: str):
+    output = ''
+    for element in content:
+        output += element + delimiter
+
+    output = output.removesuffix(delimiter)
+
+    return output
+
+
+def dictToString(content: dict, delimiter: str):
+    """
+    Only works for one-dimensional dictionaries
+    """
+
+    output = ''
+    for key in content:
+        output += key + '=' + str(content[key]) + delimiter
+
+    output = output.removesuffix(delimiter)
+
+    return output
+
+    return output

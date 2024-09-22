@@ -24,7 +24,7 @@ def validate_api_key(api_key: str):
 
 
 def start(api_key: str, usernames: str, folder_path: str, search_options: dict):
-    logger.info('Scraping has started with the following attributes: usernames="' + usernames + '" folder_path="' + folder_path + '" search_options=')
+    logger.info('Scraping has started with the following attributes: usernames="' + usernames + '" folder_path="' + folder_path + '" search_options=' + helpers.dictToString(search_options, ', '))
 
     usernames = parseInput(usernames)
     ps.readSearchedUsersFile()
@@ -140,7 +140,7 @@ def generateJsonDataFile(steamId: str, jsonData, folder_path: str):
 
     file.close()
 
-    logger.info('Json data file created for ' + steamId + ' in "' + folder_path + '"')
+    logger.info('Json data file created for ' + steamId + ' in "' + folder_path + '/Json/' + steamId + '"')
 
     return True
 
