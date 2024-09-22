@@ -15,6 +15,11 @@ output_dict = {}  # username : error/success result
 
 def validate_api_key(api_key: str):
     r = requests.get('http://api.steampowered.com/ISteamUser/GetPlayerSummaries/v0002/?key='+api_key+'&steamids=76561197960435530')
+
+    if r.status_code == 200:
+        logger.info('Steam API key is VALID')
+    else:
+        logger.info('Steam API key is INVALID')
     return r.status_code == 200
 
 
@@ -32,6 +37,8 @@ def start(api_key: str, usernames: str, folder_path: str, search_options: dict):
         html = BeautifulSoup(r.content, features='html.parser')
 
         if html.find(string='The specified profile could not be found.'):
+            logger.info('User "' + username + '" could not be found')
+
             output_dict[username] = helpers.OutputUserStatus.NOT_FOUND.value
             continue
 

@@ -111,7 +111,7 @@ def writeJsonFile(path: str, content: dict, mode: str):
     file.write(settings_data_json)
 
     file.close()
-    logger.info('File write of ' + '[' + path + '] successful')
+    logger.info('Writing to file ' + '"' + path + '"]" in mode "' + mode + '"' )
 
 
 def readSettings():
@@ -135,5 +135,5 @@ def readSettings():
     search_options = settings_data['preferences']['search_options']
 
     file.close()
-    logger.info('Read of ' + '[' + appdata_path + '/' + SETTINGS_FILE_NAME + '] successful')
+    logger.info(SETTINGS_FILE_NAME + ' read in successfully "' + appdata_path + '/' + SETTINGS_FILE_NAME + '"')
 
