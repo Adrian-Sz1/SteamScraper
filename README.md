@@ -25,8 +25,6 @@ SUS uses Steam's Public API to authorize and send requests which it then process
 #### Python Version
   - 3.11.9 and above
 #### Packages
-- ```openyxl```
-- ```bs4```
-- ```PySimpleGUI```
+See [Project Dependencies](https://github.com/Adrian-Sz1/SteamScraper/network/dependencies)
 
 ## How-To-Use
