@@ -159,6 +159,7 @@ def generateJsonDataFile(steamId: str, jsonData, folder_path: str):
     file.close()
     return True
 
+
 def scrapeGameData(api_key: str, steamId: str, folder_path: str):
     #currentGameData.clear()
     timeStart = time.perf_counter()
@@ -166,16 +167,21 @@ def scrapeGameData(api_key: str, steamId: str, folder_path: str):
     url = ''
     # Check if we are dealing with a vanity url or an actual steam id
     if not steamId.isalnum() and not steamId.__len__() == 17:
-        url = 'https://api.steampowered.com/ISteamUser/ResolveVanityURL/v1/?key='+api_key+'&vanityurl='+steamId
-        r = requests.get(url)
-        rjson = r.json()
-        gg = rjson['response']
-        steamId = gg['steamid']
+        if steamId not in ps.searched_users_dict:
+            url = 'https://api.steampowered.com/ISteamUser/ResolveVanityURL/v1/?key=' + api_key + '&vanityurl=' + steamId
+            r = requests.get(url)
+            rjson = r.json()
+            gg = rjson['response']
+
+            ps.tryAppendNewUserToCache(steamId, gg['steamid'])
+
+            steamId = gg['steamid']
+        else:
+            steamId = ps.searched_users_dict[steamId]
 
     url = 'http://api.steampowered.com/IPlayerService/GetOwnedGames/v0001/?key=' + api_key + '&steamid=' + steamId + '&include_appinfo=false&include_played_free_games=true&format=json'
 
     r = requests.get(url)
     generateJsonDataFile(steamId, r.json(), folder_path)
 
-# TODO Add a dict and save vanityURL resolved users i.e. Royal_Cabbage : 76561198049832868 to prevent unecessary calls for previously scraped users
 # Get game names using appids https://store.steampowered.com/api/appdetails?appids=2630

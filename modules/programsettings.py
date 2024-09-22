@@ -2,8 +2,9 @@ import json
 import os
 
 # region settings
-settingsPath = ''
+appdata_path = ''
 SETTINGS_FILE_NAME = 'settings.json'
+SEARCHED_USERS_NAME = 'searched_users.json'
 
 APP_NAME = 'Steam User Scraper'
 OS_USERNAME = ''
@@ -15,6 +16,7 @@ previous_parameters = ''
 steam_api_key = ''
 search_options = {}
 
+searched_users_dict = {}
 
 # endregion
 
@@ -25,19 +27,27 @@ def setUsernameOnOS():
         OS_USERNAME = os.getenv("USERNAME")
 
 
+def tryAppendNewUserToCache(display_name: str, steam_id: str):
+    if str.isspace(display_name) or str.isspace(steam_id):
+        return
+
+    searched_users_dict[display_name] = steam_id
+    writeJsonFile(appdata_path + '/' + SEARCHED_USERS_NAME, searched_users_dict, 'w')
+
+
 def validateSettingsFileExists():
-    global settingsPath
+    global appdata_path
     setUsernameOnOS()
-    settingsPath = 'C:/Users/' + OS_USERNAME + '/AppData/Roaming/' + APP_NAME
-    return os.path.isfile(settingsPath + '/' + SETTINGS_FILE_NAME)
+    appdata_path = 'C:/Users/' + OS_USERNAME + '/AppData/Roaming/' + APP_NAME
+    return os.path.isfile(appdata_path + '/' + SETTINGS_FILE_NAME)
 
 
 def createDefaultSettingsFile():
-    if not os.path.exists(settingsPath):
-        os.mkdir(settingsPath)
+    if not os.path.exists(appdata_path):
+        os.mkdir(appdata_path)
     settings_data = {
         "preferences": {
-            "output_folder_path": settingsPath + '/' + 'data',
+            "output_folder_path": appdata_path + '/' + 'data',
             "output_file_type": 'json',
             "create_sub_folders": True,
             "previous_parameters": 'Usernames\nGo\nHere',
@@ -51,7 +61,7 @@ def createDefaultSettingsFile():
             }
         }
     }
-    writeJsonFile(settingsPath + '/' + SETTINGS_FILE_NAME, settings_data, 'x')
+    writeJsonFile(appdata_path + '/' + SETTINGS_FILE_NAME, settings_data, 'x')
 
 
 def updateSettings(outputFileType, outputFolderPath, createSubFolders, previousParameters, steamApiKey, searchOptions):
@@ -72,7 +82,7 @@ def updateSettings(outputFileType, outputFolderPath, createSubFolders, previousP
         }
     }
 
-    writeJsonFile(settingsPath + '/' + SETTINGS_FILE_NAME, settings_data, 'w')
+    writeJsonFile(appdata_path + '/' + SETTINGS_FILE_NAME, settings_data, 'w')
 
 
 def writeJsonFile(path: str, content: dict, mode: str):
@@ -91,7 +101,7 @@ def readSettings():
 
     global output_folder_path, output_file_type, create_sub_folders, previous_parameters, steam_api_key, search_options
 
-    file = open(settingsPath + '/' + SETTINGS_FILE_NAME, "r")
+    file = open(appdata_path + '/' + SETTINGS_FILE_NAME, "r")
     settings_data = json.load(file)
 
     if 'preferences' not in settings_data:
