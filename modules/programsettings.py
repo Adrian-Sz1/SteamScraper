@@ -79,7 +79,7 @@ def createDefaultSettingsFile():
             }
         }
     }
-    logger.info('Creating default settings file in ' + '[' + appdata_path + '/' + SETTINGS_FILE_NAME + ']')
+    logger.info('Creating default settings file in ' + '"' + appdata_path + '/' + SETTINGS_FILE_NAME + '')
     writeJsonFile(appdata_path + '/' + SETTINGS_FILE_NAME, settings_data, 'x')
 
 

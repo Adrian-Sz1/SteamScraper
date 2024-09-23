@@ -24,7 +24,6 @@ if __name__ == "__main__":
                         handlers=[logging.FileHandler(ps.getAppDataPath() + '/Steam_User_Scraper.log'),
                                   logging.StreamHandler()])
 
-
     logger.info('Starting Steam User Scraper')
     initialize()
     logger.info('Process finished with exit code 0')

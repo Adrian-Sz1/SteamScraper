@@ -14,8 +14,7 @@ output_dict = {}  # username : error/success result
 
 
 def validate_api_key(api_key: str):
-    r = requests.get('http://api.steampowered.com/ISteamUser/GetPlayerSummaries/v0002/?key='+api_key+'&steamids=76561197960435530')
-
+    r = sendRequestWrapper('http://api.steampowered.com/ISteamUser/GetPlayerSummaries/v0002/?key='+api_key+'&steamids=76561197960435530')
     if r.status_code == 200:
         logger.info('Steam API key is VALID')
     else:
@@ -33,7 +32,7 @@ def start(api_key: str, usernames: str, folder_path: str, search_options: dict):
     for username in usernames:
         url = helpers.URL_PREFIX + username
 
-        r = requests.get(url)
+        r = sendRequestWrapper(url)
         html = BeautifulSoup(r.content, features='html.parser')
 
         if html.find(string='The specified profile could not be found.'):
@@ -153,7 +152,7 @@ def scrapeGameData(api_key: str, steamId: str, folder_path: str):
         logger.info(steamId + ' is alphanumeric fetching steam64id...')
         if steamId not in ps.searched_users_dict:
             url = 'https://api.steampowered.com/ISteamUser/ResolveVanityURL/v1/?key=' + api_key + '&vanityurl=' + steamId
-            r = requests.get(url)
+            r = sendRequestWrapper(url)
             rjson = r.json()
             gg = rjson['response']
 
@@ -170,10 +169,18 @@ def scrapeGameData(api_key: str, steamId: str, folder_path: str):
     url = 'http://api.steampowered.com/IPlayerService/GetOwnedGames/v0001/?key=' + api_key + '&steamid=' + steamId + '&include_appinfo=false&include_played_free_games=true&format=json'
     logger.info('Sending Owned Games request for user with id "' + steamId + '"')
 
-    r = requests.get(url)
-
-    logger.info('Owned Games status code=' + str(r.status_code))
+    r = sendRequestWrapper(url)
 
     generateJsonDataFile(steamId, r.json(), folder_path)
 
 # Get game names using appids https://store.steampowered.com/api/appdetails?appids=2630
+
+
+def sendRequestWrapper(url: str):
+    r = requests.get(url)
+
+    url = url.replace(ps.steam_api_key, '[STEAM API KEY REDACTED]')
+
+    logger.info(''.join(['Status code ', str(r.status_code), ' for request ', url]))
+
+    return r
