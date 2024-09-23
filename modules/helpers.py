@@ -1,15 +1,5 @@
 from enum import Enum
 
-URL_PREFIX = 'https://steamcommunity.com/id/'
-URL_SUFFIX = '/games/?tab=all&sort=playtime'
-
-API_BASE_URL = 'http://api.steampowered.com/IPlayerService/GetOwnedGames/v0001/?key='
-API_URL_PREFIX = '&steamid='
-API_URL_SUFFIX = '&format=json'
-
-RESOLVE_VANITY_URL = 'https://api.steampowered.com/ISteamUser/ResolveVanityURL/v1/?key='
-RESOLVE_VANITY_URL_SUFFIX = '&vanityurl='
-
 
 class OutputUserStatus(Enum):
     NOT_FOUND = 'User not found'
@@ -86,7 +76,5 @@ def dictToString(content: dict, delimiter: str):
         output += key + '=' + str(content[key]) + delimiter
 
     output = output.removesuffix(delimiter)
-
-    return output
 
     return output

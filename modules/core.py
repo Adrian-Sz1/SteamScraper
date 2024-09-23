@@ -1,12 +1,14 @@
 import json
 import os
-import time
 from bs4 import BeautifulSoup
 import requests
 import modules.helpers as helpers
 import modules as modules
 import modules.programsettings as ps
 import logging
+import modules.constants as c
+import modules.enums.file_types as file_types
+
 
 logger = logging.getLogger(__name__)
 
@@ -30,7 +32,7 @@ def start(api_key: str, usernames: str, folder_path: str, search_options: dict):
     output_dict.clear()
 
     for username in usernames:
-        url = helpers.URL_PREFIX + username
+        url = c.URL_PREFIX + username
 
         r = sendRequestWrapper(url)
         html = BeautifulSoup(r.content, features='html.parser')
@@ -116,24 +118,52 @@ def parseInput(input_usernames: str):
 #     wb.close()
 #     return True
 
-def generateJsonDataFile(steamId: str, jsonData, folder_path: str):
-    file_name = steamId + '_' + modules.currentDate + '.json'
-    if ps.create_sub_folders:
-        file_dir = folder_path + '/Json/' + steamId+'/'
-    else:
-        file_dir = folder_path + '/Json/'
+def tryCreateEmptyOutputFile(steamId: str, folder_path: str, file_type: str):
+    """
+    Create a new empty file of a given file type. If file already exists in the path specified, the existing file is returned.
+
+    """
+    if not file_types.SupportedFileType.is_supported(file_type):
+        logger.info(''.join([file_type,
+                             ' is not a supported file type, file "',
+                             steamId,
+                             '_',
+                             modules.currentDate,
+                             '" will not be saved']))
+        return None
+
+    file_name = steamId + '_' + modules.currentDate + '.' + file_type
+
+    file_dir = ''
+    match ps.create_sub_folders:
+        case True: file_dir = folder_path + '/' + file_type + '/' + steamId + '/'
+        case False: file_dir = folder_path + '/' + file_type + '/'
 
     if not os.path.exists(file_dir):
         os.makedirs(file_dir)
-    #    if not os.path.exists(file_dir + file_name):
-    #        print('')  # Do nothing for now
-    #    Menus.displayOptions(options)
-    #    Menus.confirmPromptMenu()
-    ###########################################
-
-    save_file_json = json.dumps(jsonData, indent=2)
 
     file = open(file_dir + file_name, "w")
+
+    return file
+
+
+def writeOutputFile(steamId: str, content, folder_path: str, file_type: str):
+    file = tryCreateEmptyOutputFile(steamId, folder_path, file_type)
+    logger.info('Writing to "' + folder_path + file.name + '"')
+    match file_type:
+        case file_types.SupportedFileType.csv.name:
+            Exception('Not Implemented')
+        case file_types.SupportedFileType.json.name:
+            generateJsonDataFile(file, steamId, content, folder_path)
+        case file_types.SupportedFileType.xml.name:
+            Exception('Not Implemented')
+        case file_types.SupportedFileType.yaml.name:
+            Exception('Not Implemented')
+
+
+def generateJsonDataFile(file, steamId: str, content, folder_path: str):
+
+    save_file_json = json.dumps(content, indent=2)
 
     file.write(save_file_json)
 
@@ -171,7 +201,7 @@ def scrapeGameData(api_key: str, steamId: str, folder_path: str):
 
     r = sendRequestWrapper(url)
 
-    generateJsonDataFile(steamId, r.json(), folder_path)
+    writeOutputFile(steamId, r.json(), folder_path, ps.output_file_type)
 
 # Get game names using appids https://store.steampowered.com/api/appdetails?appids=2630
 
