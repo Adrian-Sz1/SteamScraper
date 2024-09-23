@@ -21,6 +21,7 @@ search_options = {}
 
 searched_users_dict = {}
 
+
 # endregion
 
 
@@ -78,7 +79,7 @@ def createDefaultSettingsFile():
             }
         }
     }
-    logger.info('Creating default settings file in ' + '['+appdata_path + '/' + SETTINGS_FILE_NAME+']')
+    logger.info('Creating default settings file in ' + '[' + appdata_path + '/' + SETTINGS_FILE_NAME + ']')
     writeJsonFile(appdata_path + '/' + SETTINGS_FILE_NAME, settings_data, 'x')
 
 
@@ -111,7 +112,20 @@ def writeJsonFile(path: str, content: dict, mode: str):
     file.write(settings_data_json)
 
     file.close()
-    logger.info('Writing to file ' + '"' + path + '"]" in mode "' + mode + '"' )
+    logger.info('Writing to file ' + '"' + path + '"]" in mode "' + mode + '"')
+
+
+def updateSettingsFileKey(target_key: str, new_value):
+    file = open(appdata_path + '/' + SETTINGS_FILE_NAME, "r")
+    settings_data = json.load(file)
+
+    file.close()
+
+    if settings_data['preferences'].get(target_key) is None:
+        return
+
+    settings_data['preferences'][target_key] = new_value
+    writeJsonFile(appdata_path + '/' + SETTINGS_FILE_NAME, settings_data, 'w')
 
 
 def readSettings():
@@ -136,4 +150,3 @@ def readSettings():
 
     file.close()
     logger.info(SETTINGS_FILE_NAME + ' read in successfully "' + appdata_path + '/' + SETTINGS_FILE_NAME + '"')
-

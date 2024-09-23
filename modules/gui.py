@@ -2,6 +2,7 @@ import PySimpleGUI as sg
 import modules.programsettings as ps
 import modules.core as c
 
+
 def create_window(
         output_folder_path: str,
         output_file_type: str,
@@ -75,6 +76,7 @@ def create_window(
             window['save_button'].Update(visible=True)
 
         if event == 'Start':
+            ps.updateSettingsFileKey('previous_parameters', window['parameters_multiline'].Get())
             window['result_output'].Update(c.start(window['steam_api_key'].Get(), window['parameters_multiline'].Get(), window['output_folder_path'].Get(), ps.search_options))
 
         if event == 'validate_api_key':
