@@ -23,7 +23,7 @@ def create_window(
     settings_layout = [[sg.Text('Preferences', font=FONT_HEADING)], [sg.HorizontalSeparator()],
                        [sg.Text('Your Steam API key'), sg.Push(), sg.Input(steam_api_key, key='steam_api_key', enable_events=True), sg.Text('', key='api_key_test_result'), sg.Button('Check Key', key='validate_api_key')],
                        [sg.Text('Output File Type', font=FONT_OPTION), sg.Push(),
-                        sg.Combo(['xlsx', 'csv', 'json', 'raw'], readonly=True, default_value=output_file_type, enable_events=True,
+                        sg.Combo(['csv', 'json', 'xml', 'yaml'], readonly=True, default_value=output_file_type, enable_events=True,
                                       key='-OPTION MENU-')],
                        [sg.Text('Output Folder',font=FONT_OPTION), sg.Input(default_text=output_folder_path, key='output_folder_path', enable_events=True),
                         sg.FolderBrowse()], [sg.Checkbox('Create a sub-folder for each user', key='user_sub_folder', enable_events=True, font=FONT_OPTION,

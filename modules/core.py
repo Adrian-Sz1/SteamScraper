@@ -1,5 +1,6 @@
 import json
 import csv
+import yaml
 import os
 from bs4 import BeautifulSoup
 import requests
@@ -73,51 +74,6 @@ def parseInput(input_usernames: str):
     return input_usernames.split(',')
 
 
-# def generateJsonData():
-#     if len(modules.currentGameData) <= 0:
-#         ConsoleMessages.no_game_data_found()
-#         return False
-#
-#     total_hours = float()
-#     for game in currentGameData[0]: total_hours += game[1]
-#
-#     data = {
-#         'details': {
-#             'steam_id': currentSteamId,
-#             'username': currentUserName,
-#             'date_of_scrape': currentDate,
-#             'hours_on_record': round(total_hours, 2),
-#             'total_games': len(currentGameData[0])
-#         },
-#         'games': dict(currentGameData[0]),
-#     }
-#     global history
-#     history.append(currentSteamId + '_' + currentDate + '.json')
-#
-#     return data
-#
-# def convertToExcel():  # TODO: Refactor
-#     if len(currentGameData) <= 0:
-#         ConsoleMessages.no_game_data_found()
-#         return False
-#
-#     # TODO: Create workbook if one doesn't exist already
-#     wb_name = ScrapeDataPath + "XLSX/" + GameDataScraper.applyFileName() + '.xlsx'
-#     wb = load_workbook(wb_name)
-#     ws = wb.active
-#
-#     row = 2
-#
-#     for game in currentGameData:
-#         ws['B' + str(row)] = game[0]
-#         ws['C' + str(row + 1)] = float(game[1])
-#         row += 1
-#     # ws.column_dimensions['C'].number_format = u'#,##0.00€'
-#
-#     wb.save(wb_name)
-#     wb.close()
-#     return True
-
 def tryCreateEmptyOutputFile(steamId: str, folder_path: str, file_type: str):
     """
     Create a new empty file of a given file type. If file already exists in the path specified, the existing file is returned.
@@ -157,7 +113,7 @@ def writeOutputFile(steamId: str, content, folder_path: str, file_type: str):
         case file_types.SupportedFileType.xml.name:
             Exception('Not Implemented')
         case file_types.SupportedFileType.yaml.name:
-            Exception('Not Implemented')
+            generateYamlDataFile(file, content)
 
 
 def remapOutputData(jsonData: dict):
@@ -197,6 +153,14 @@ def generateJsonDataFile(file, content):
     logger.info('Json data file created for "' + file.name + '"')
 
 
+def generateYamlDataFile(file, content):
+    yaml.dump(content, file, allow_unicode=True)
+
+    file.close()
+
+    logger.info('Yaml data file created for "' + file.name + '"')
+
+
 def generateCsvDataFile(file, content: dict):
     games = content['games']
     games1 = games[0].keys()
@@ -204,22 +168,14 @@ def generateCsvDataFile(file, content: dict):
         w = csv.DictWriter(f, games1)
         w.writeheader()
         for game in games:
-            w.writerow(game) # playtime2weeks is only visible in some objects in json, this must be accounted for
+            w.writerow(game)
 
-    #file.newlines('')
-    #g = content['response']['games']
-
-    #w = csv.writer(file)
-    #w.writerow(content)
-
-
-    #save_file_json = json.dumps(content, indent=2)
-
-    #file.close()
+    f.close()
 
     logger.info('Csv data file created for "' + file.name)
 
     return True
+
 
 def scrapeGameData(api_key: str, steamId: str, folder_path: str):
     logger.info('Scraping game data for user ' + steamId)
