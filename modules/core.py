@@ -57,7 +57,6 @@ def start(api_key: str, usernames: str, folder_path: str, search_options: dict):
         if search_options['include_profile_comments']:
             print('include_profile_comments')
 
-
     return parseDictToString(output_dict)
 
 
@@ -176,6 +175,7 @@ def generateCsvDataFile(file, content: dict):
 
 
 def scrapeGameData(api_key: str, steamId: str, folder_path: str):
+    username = steamId
     logger.info('Scraping game data for user ' + steamId)
     url = ''
     # Check if we are dealing with a vanity url or an actual steam id
@@ -201,6 +201,11 @@ def scrapeGameData(api_key: str, steamId: str, folder_path: str):
     logger.info('Sending Owned Games request for user with id "' + steamId + '"')
 
     r = sendRequestWrapper(url)
+
+    if 'games' not in r.json():
+        logger.info('User Games is empty, file will not be saved')
+        output_dict[username] = helpers.OutputUserStatus.ACCOUNT_PRIVATE.value
+        return
 
     writeOutputFile(steamId, remapOutputData(r.json()), folder_path, ps.output_file_type)
 
