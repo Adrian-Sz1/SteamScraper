@@ -1,4 +1,5 @@
 import json
+import csv
 import os
 from bs4 import BeautifulSoup
 import requests
@@ -8,7 +9,6 @@ import modules.programsettings as ps
 import logging
 import modules.constants as c
 import modules.enums.file_types as file_types
-
 
 logger = logging.getLogger(__name__)
 
@@ -121,7 +121,6 @@ def parseInput(input_usernames: str):
 def tryCreateEmptyOutputFile(steamId: str, folder_path: str, file_type: str):
     """
     Create a new empty file of a given file type. If file already exists in the path specified, the existing file is returned.
-
     """
     if not file_types.SupportedFileType.is_supported(file_type):
         logger.info(''.join([file_type,
@@ -149,19 +148,45 @@ def tryCreateEmptyOutputFile(steamId: str, folder_path: str, file_type: str):
 
 def writeOutputFile(steamId: str, content, folder_path: str, file_type: str):
     file = tryCreateEmptyOutputFile(steamId, folder_path, file_type)
-    logger.info('Writing to "' + folder_path + file.name + '"')
+    logger.info('Writing to "' + file.name + '"')
     match file_type:
         case file_types.SupportedFileType.csv.name:
-            Exception('Not Implemented')
+            generateCsvDataFile(file, content)
         case file_types.SupportedFileType.json.name:
-            generateJsonDataFile(file, steamId, content, folder_path)
+            generateJsonDataFile(file, content)
         case file_types.SupportedFileType.xml.name:
             Exception('Not Implemented')
         case file_types.SupportedFileType.yaml.name:
             Exception('Not Implemented')
 
 
-def generateJsonDataFile(file, steamId: str, content, folder_path: str):
+def remapOutputData(jsonData: dict):
+    games_dict = jsonData['response']['games']
+
+    total_playtime = 0
+    total_playtime2weeks = 0
+
+    # TODO: This is inefficient, most games will not have this field - this means tech debt :)
+    for game in games_dict:
+
+        total_playtime += game['playtime_forever']
+
+        if 'playtime_2weeks' in game:
+            total_playtime2weeks += game['playtime_2weeks']
+        else:
+            game['playtime_2weeks'] = 0
+
+    output_template = {
+        "game_count": jsonData['response']['game_count'],
+        "total_playtime": total_playtime,
+        "total_playtime2weeks": total_playtime2weeks,
+        "games": games_dict
+    }
+
+    return output_template
+
+
+def generateJsonDataFile(file, content):
 
     save_file_json = json.dumps(content, indent=2)
 
@@ -169,10 +194,32 @@ def generateJsonDataFile(file, steamId: str, content, folder_path: str):
 
     file.close()
 
-    logger.info('Json data file created for ' + steamId + ' in "' + folder_path + '/Json/' + steamId + '"')
+    logger.info('Json data file created for "' + file.name + '"')
+
+
+def generateCsvDataFile(file, content: dict):
+    games = content['games']
+    games1 = games[0].keys()
+    with file as f:
+        w = csv.DictWriter(f, games1)
+        w.writeheader()
+        for game in games:
+            w.writerow(game) # playtime2weeks is only visible in some objects in json, this must be accounted for
+
+    #file.newlines('')
+    #g = content['response']['games']
+
+    #w = csv.writer(file)
+    #w.writerow(content)
+
+
+    #save_file_json = json.dumps(content, indent=2)
+
+    #file.close()
+
+    logger.info('Csv data file created for "' + file.name)
 
     return True
-
 
 def scrapeGameData(api_key: str, steamId: str, folder_path: str):
     logger.info('Scraping game data for user ' + steamId)
@@ -201,7 +248,7 @@ def scrapeGameData(api_key: str, steamId: str, folder_path: str):
 
     r = sendRequestWrapper(url)
 
-    writeOutputFile(steamId, r.json(), folder_path, ps.output_file_type)
+    writeOutputFile(steamId, remapOutputData(r.json()), folder_path, ps.output_file_type)
 
 # Get game names using appids https://store.steampowered.com/api/appdetails?appids=2630
 

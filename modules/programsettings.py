@@ -100,6 +100,7 @@ def updateSettings(outputFileType, outputFolderPath, createSubFolders, previousP
     }
 
     writeJsonFile(appdata_path + '/' + c.SETTINGS_FILE_NAME, settings_data, 'w')
+    readSettings()
 
 
 def writeJsonFile(path: str, content: dict, mode: str):
