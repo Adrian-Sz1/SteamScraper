@@ -48,5 +48,5 @@ See [Project Dependencies](https://github.com/Adrian-Sz1/SteamScraper/network/de
 7. Select your desired folder directory, file type and the user details you would like to retrieve
 8. Input the users that you would like to retrieve information for in the 'Parameters' panel. User's must be seperated by a comma (,) like this "username1,username2".
    ![image](https://github.com/user-attachments/assets/7b72f82d-6c0b-4ea9-97b8-4661bf788e0b)
-9. Hit 'Scrape' button to begin the scrapping process
+9. Hit 'Start' button to begin the scrapping process
 10. Once finished, navigate to the output folder directory to see the output results
