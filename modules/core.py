@@ -110,8 +110,6 @@ def writeOutputFile(steamId: str, content, folder_path: str, file_type: str):
             generateCsvDataFile(file, content)
         case file_types.SupportedFileType.json.name:
             generateJsonDataFile(file, content)
-        case file_types.SupportedFileType.xml.name:
-            Exception('Not Implemented')
         case file_types.SupportedFileType.yaml.name:
             generateYamlDataFile(file, content)
 

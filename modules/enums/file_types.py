@@ -4,7 +4,6 @@ from enum import Enum
 class SupportedFileType(Enum):
     csv = 1,
     json = 2,
-    xml = 3,
     yaml = 4
 
     @classmethod
