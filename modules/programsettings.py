@@ -1,15 +1,13 @@
 import json
 import os
 import logging
+import modules.constants as c
 
 logger = logging.getLogger(__name__)
 
 # region settings
 appdata_path = ''
-SETTINGS_FILE_NAME = 'settings.json'
-SEARCHED_USERS_NAME = 'searched_users.json'
 
-APP_NAME = 'Steam User Scraper'
 OS_USERNAME = ''
 
 output_folder_path = ''
@@ -33,7 +31,7 @@ def setUsernameOnOS():
 
 def getAppDataPath():
     setUsernameOnOS()
-    return 'C:/Users/' + OS_USERNAME + '/AppData/Roaming/' + APP_NAME
+    return 'C:/Users/' + OS_USERNAME + '/AppData/Roaming/' + c.APP_NAME
 
 
 def tryAppendNewUserToCache(display_name: str, steam_id: str):
@@ -41,21 +39,21 @@ def tryAppendNewUserToCache(display_name: str, steam_id: str):
         return
 
     searched_users_dict[display_name] = steam_id
-    writeJsonFile(appdata_path + '/' + SEARCHED_USERS_NAME, searched_users_dict, 'w')
+    writeJsonFile(appdata_path + '/' + c.SEARCHED_USERS_NAME, searched_users_dict, 'w')
 
 
 def readSearchedUsersFile():
-    if os.path.isfile(appdata_path + '/' + SEARCHED_USERS_NAME):
+    if os.path.isfile(appdata_path + '/' + c.SEARCHED_USERS_NAME):
         global searched_users_dict
-        file = open(appdata_path + '/' + SEARCHED_USERS_NAME, "r")
+        file = open(appdata_path + '/' + c.SEARCHED_USERS_NAME, "r")
         searched_users_dict = json.load(file)
 
 
 def validateSettingsFileExists():
     global appdata_path
     setUsernameOnOS()
-    appdata_path = 'C:/Users/' + OS_USERNAME + '/AppData/Roaming/' + APP_NAME
-    return os.path.isfile(appdata_path + '/' + SETTINGS_FILE_NAME)
+    appdata_path = 'C:/Users/' + OS_USERNAME + '/AppData/Roaming/' + c.APP_NAME
+    return os.path.isfile(appdata_path + '/' + c.SETTINGS_FILE_NAME)
 
 
 def createDefaultSettingsFile():
@@ -79,8 +77,8 @@ def createDefaultSettingsFile():
             }
         }
     }
-    logger.info('Creating default settings file in ' + '"' + appdata_path + '/' + SETTINGS_FILE_NAME + '')
-    writeJsonFile(appdata_path + '/' + SETTINGS_FILE_NAME, settings_data, 'x')
+    logger.info('Creating default settings file in ' + '"' + appdata_path + '/' + c.SETTINGS_FILE_NAME + '')
+    writeJsonFile(appdata_path + '/' + c.SETTINGS_FILE_NAME, settings_data, 'x')
 
 
 def updateSettings(outputFileType, outputFolderPath, createSubFolders, previousParameters, steamApiKey, searchOptions):
@@ -101,7 +99,8 @@ def updateSettings(outputFileType, outputFolderPath, createSubFolders, previousP
         }
     }
 
-    writeJsonFile(appdata_path + '/' + SETTINGS_FILE_NAME, settings_data, 'w')
+    writeJsonFile(appdata_path + '/' + c.SETTINGS_FILE_NAME, settings_data, 'w')
+    readSettings()
 
 
 def writeJsonFile(path: str, content: dict, mode: str):
@@ -116,7 +115,7 @@ def writeJsonFile(path: str, content: dict, mode: str):
 
 
 def updateSettingsFileKey(target_key: str, new_value):
-    file = open(appdata_path + '/' + SETTINGS_FILE_NAME, "r")
+    file = open(appdata_path + '/' + c.SETTINGS_FILE_NAME, "r")
     settings_data = json.load(file)
 
     file.close()
@@ -125,7 +124,7 @@ def updateSettingsFileKey(target_key: str, new_value):
         return
 
     settings_data['preferences'][target_key] = new_value
-    writeJsonFile(appdata_path + '/' + SETTINGS_FILE_NAME, settings_data, 'w')
+    writeJsonFile(appdata_path + '/' + c.SETTINGS_FILE_NAME, settings_data, 'w')
 
 
 def readSettings():
@@ -135,7 +134,7 @@ def readSettings():
 
     global output_folder_path, output_file_type, create_sub_folders, previous_parameters, steam_api_key, search_options
 
-    file = open(appdata_path + '/' + SETTINGS_FILE_NAME, "r")
+    file = open(appdata_path + '/' + c.SETTINGS_FILE_NAME, "r")
     settings_data = json.load(file)
 
     if 'preferences' not in settings_data:
@@ -149,4 +148,4 @@ def readSettings():
     search_options = settings_data['preferences']['search_options']
 
     file.close()
-    logger.info(SETTINGS_FILE_NAME + ' read in successfully "' + appdata_path + '/' + SETTINGS_FILE_NAME + '"')
+    logger.info(c.SETTINGS_FILE_NAME + ' read in successfully "' + appdata_path + '/' + c.SETTINGS_FILE_NAME + '"')

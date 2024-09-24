@@ -1,12 +1,15 @@
 import json
+import csv
+import yaml
 import os
-import time
 from bs4 import BeautifulSoup
 import requests
 import modules.helpers as helpers
 import modules as modules
 import modules.programsettings as ps
 import logging
+import modules.constants as c
+import modules.enums.file_types as file_types
 
 logger = logging.getLogger(__name__)
 
@@ -30,7 +33,7 @@ def start(api_key: str, usernames: str, folder_path: str, search_options: dict):
     output_dict.clear()
 
     for username in usernames:
-        url = helpers.URL_PREFIX + username
+        url = c.URL_PREFIX + username
 
         r = sendRequestWrapper(url)
         html = BeautifulSoup(r.content, features='html.parser')
@@ -71,75 +74,103 @@ def parseInput(input_usernames: str):
     return input_usernames.split(',')
 
 
-# def generateJsonData():
-#     if len(modules.currentGameData) <= 0:
-#         ConsoleMessages.no_game_data_found()
-#         return False
-#
-#     total_hours = float()
-#     for game in currentGameData[0]: total_hours += game[1]
-#
-#     data = {
-#         'details': {
-#             'steam_id': currentSteamId,
-#             'username': currentUserName,
-#             'date_of_scrape': currentDate,
-#             'hours_on_record': round(total_hours, 2),
-#             'total_games': len(currentGameData[0])
-#         },
-#         'games': dict(currentGameData[0]),
-#     }
-#     global history
-#     history.append(currentSteamId + '_' + currentDate + '.json')
-#
-#     return data
-#
-# def convertToExcel():  # TODO: Refactor
-#     if len(currentGameData) <= 0:
-#         ConsoleMessages.no_game_data_found()
-#         return False
-#
-#     # TODO: Create workbook if one doesn't exist already
-#     wb_name = ScrapeDataPath + "XLSX/" + GameDataScraper.applyFileName() + '.xlsx'
-#     wb = load_workbook(wb_name)
-#     ws = wb.active
-#
-#     row = 2
-#
-#     for game in currentGameData:
-#         ws['B' + str(row)] = game[0]
-#         ws['C' + str(row + 1)] = float(game[1])
-#         row += 1
-#     # ws.column_dimensions['C'].number_format = u'#,##0.00€'
-#
-#     wb.save(wb_name)
-#     wb.close()
-#     return True
+def tryCreateEmptyOutputFile(steamId: str, folder_path: str, file_type: str):
+    """
+    Create a new empty file of a given file type. If file already exists in the path specified, the existing file is returned.
+    """
+    if not file_types.SupportedFileType.is_supported(file_type):
+        logger.info(''.join([file_type,
+                             ' is not a supported file type, file "',
+                             steamId,
+                             '_',
+                             modules.currentDate,
+                             '" will not be saved']))
+        return None
 
-def generateJsonDataFile(steamId: str, jsonData, folder_path: str):
-    file_name = steamId + '_' + modules.currentDate + '.json'
-    if ps.create_sub_folders:
-        file_dir = folder_path + '/Json/' + steamId+'/'
-    else:
-        file_dir = folder_path + '/Json/'
+    file_name = steamId + '_' + modules.currentDate + '.' + file_type
+
+    file_dir = ''
+    match ps.create_sub_folders:
+        case True: file_dir = folder_path + '/' + file_type + '/' + steamId + '/'
+        case False: file_dir = folder_path + '/' + file_type + '/'
 
     if not os.path.exists(file_dir):
         os.makedirs(file_dir)
-    #    if not os.path.exists(file_dir + file_name):
-    #        print('')  # Do nothing for now
-    #    Menus.displayOptions(options)
-    #    Menus.confirmPromptMenu()
-    ###########################################
-
-    save_file_json = json.dumps(jsonData, indent=2)
 
     file = open(file_dir + file_name, "w")
+
+    return file
+
+
+def writeOutputFile(steamId: str, content, folder_path: str, file_type: str):
+    file = tryCreateEmptyOutputFile(steamId, folder_path, file_type)
+    logger.info('Writing to "' + file.name + '"')
+    match file_type:
+        case file_types.SupportedFileType.csv.name:
+            generateCsvDataFile(file, content)
+        case file_types.SupportedFileType.json.name:
+            generateJsonDataFile(file, content)
+        case file_types.SupportedFileType.yaml.name:
+            generateYamlDataFile(file, content)
+
+
+def remapOutputData(jsonData: dict):
+    games_dict = jsonData['response']['games']
+
+    total_playtime = 0
+    total_playtime2weeks = 0
+
+    # TODO: This is inefficient, most games will not have this field - this means tech debt :)
+    for game in games_dict:
+
+        total_playtime += game['playtime_forever']
+
+        if 'playtime_2weeks' in game:
+            total_playtime2weeks += game['playtime_2weeks']
+        else:
+            game['playtime_2weeks'] = 0
+
+    output_template = {
+        "game_count": jsonData['response']['game_count'],
+        "total_playtime": total_playtime,
+        "total_playtime2weeks": total_playtime2weeks,
+        "games": games_dict
+    }
+
+    return output_template
+
+
+def generateJsonDataFile(file, content):
+
+    save_file_json = json.dumps(content, indent=2)
 
     file.write(save_file_json)
 
     file.close()
 
-    logger.info('Json data file created for ' + steamId + ' in "' + folder_path + '/Json/' + steamId + '"')
+    logger.info('Json data file created for "' + file.name + '"')
+
+
+def generateYamlDataFile(file, content):
+    yaml.dump(content, file, allow_unicode=True)
+
+    file.close()
+
+    logger.info('Yaml data file created for "' + file.name + '"')
+
+
+def generateCsvDataFile(file, content: dict):
+    games = content['games']
+    games1 = games[0].keys()
+    with file as f:
+        w = csv.DictWriter(f, games1)
+        w.writeheader()
+        for game in games:
+            w.writerow(game)
+
+    f.close()
+
+    logger.info('Csv data file created for "' + file.name)
 
     return True
 
@@ -171,7 +202,7 @@ def scrapeGameData(api_key: str, steamId: str, folder_path: str):
 
     r = sendRequestWrapper(url)
 
-    generateJsonDataFile(steamId, r.json(), folder_path)
+    writeOutputFile(steamId, remapOutputData(r.json()), folder_path, ps.output_file_type)
 
 # Get game names using appids https://store.steampowered.com/api/appdetails?appids=2630
 
