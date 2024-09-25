@@ -9,6 +9,15 @@ class OutputUserStatus(Enum):
     SUCCESSFUL = 'Success'
 
 
+def parseDictToString(unparsedOutput: dict):
+    output = ''
+
+    for key in unparsedOutput:
+        output += '[' + key + '] ' + unparsedOutput[key] + '\n'
+
+    return output
+
+
 class ConsoleMessages:
     colours = {
         'HEADER': '\033[95m',
