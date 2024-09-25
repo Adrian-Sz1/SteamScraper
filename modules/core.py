@@ -57,16 +57,7 @@ def start(api_key: str, usernames: str, folder_path: str, search_options: dict):
         if search_options['include_profile_comments']:
             print('include_profile_comments')
 
-    return parseDictToString(output_dict)
-
-
-def parseDictToString(unparsedOutput: dict):
-    output = ''
-
-    for key in unparsedOutput:
-        output += '[' + key + '] ' + unparsedOutput[key] + '\n'
-
-    return output
+    return output_dict
 
 
 def parseInput(input_usernames: str):

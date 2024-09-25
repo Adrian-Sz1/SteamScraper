@@ -1,7 +1,7 @@
 import PySimpleGUI as sg
 import modules.programsettings as ps
 import modules.core as c
-
+import modules.helpers as helpers
 
 def create_window(
         output_folder_path: str,
@@ -35,7 +35,7 @@ def create_window(
                         sg.Checkbox('Reviews', key='reviews_checkbox', enable_events=True, default=search_for_options['include_reviews']),
                         sg.Checkbox('Profile Comments', key='profile_comments_checkbox', enable_events=True, default=search_for_options['include_profile_comments'])],
                        [sg.Button('Save Preferences', visible=False, key='save_button'), sg.Text('', key='preferences_info_text')],
-                       [sg.Frame('Results', [[sg.Text('', key='result_output',size=(58, 5))]])]]
+                       [sg.Frame('Results', [[sg.Multiline('', key='result_output', size=(58, 5), disabled=True)]])]]
     parameters_layout = [[sg.Text('Parameters', font=FONT_HEADING), sg.Push()], [sg.HorizontalSeparator()],
                          [sg.Multiline(default_text=previous_parameters, key='parameters_multiline', font=FONT_MULTILINE, size=(None, 15), ),
                           sg.Push()]]
@@ -77,7 +77,10 @@ def create_window(
 
         if event == 'Start':
             ps.updateSettingsFileKey('previous_parameters', window['parameters_multiline'].Get())
-            window['result_output'].Update(c.start(window['steam_api_key'].Get(), window['parameters_multiline'].Get(), window['output_folder_path'].Get(), ps.search_options))
+
+            gg = c.start(window['steam_api_key'].Get(), window['parameters_multiline'].Get(), window['output_folder_path'].Get(), ps.search_options)
+
+            window['result_output'].Update(value=helpers.parseDictToString(gg))
 
         if event == 'validate_api_key':
             api_test_result_element = window['api_key_test_result']
