@@ -3,6 +3,7 @@ import modules.programsettings as ps
 import modules.core as c
 import modules.helpers as helpers
 
+
 def create_window(
         output_folder_path: str,
         output_file_type: str,
@@ -17,11 +18,14 @@ def create_window(
     FONT_OPTION = (FONT_NAME, 11)
     FONT_MULTILINE = (FONT_NAME, 10)
 
+    global peek_enabled
+    peek_enabled = False
+
     sg.theme('DarkGrey15')
     sg.DEFAULT_FONT = 'calibri'
     header_layout = [[sg.StatusBar('DISCLAIMER - Steam User Scraper is NOT affiliated with Valve or Steam.', text_color='#c2ffa7')]]
     settings_layout = [[sg.Text('Preferences', font=FONT_HEADING)], [sg.HorizontalSeparator()],
-                       [sg.Text('Your Steam API key'), sg.Push(), sg.Input(steam_api_key, key='steam_api_key', enable_events=True), sg.Text('', key='api_key_test_result'), sg.Button('Check Key', key='validate_api_key')],
+                       [sg.Text('Your Steam API key'), sg.Push(), sg.Input(steam_api_key, key='steam_api_key', enable_events=True, password_char='*'), sg.Button('Show', key='peek_key'), sg.Text('', key='api_key_test_result'), sg.Button('Check Key', key='validate_api_key')],
                        [sg.Text('Output File Type', font=FONT_OPTION), sg.Push(),
                         sg.Combo(['csv', 'json', 'yaml'], readonly=True, default_value=output_file_type, enable_events=True,
                                       key='-OPTION MENU-')],
@@ -81,6 +85,15 @@ def create_window(
             gg = c.start(window['steam_api_key'].Get(), window['parameters_multiline'].Get(), window['output_folder_path'].Get(), ps.search_options)
 
             window['result_output'].Update(value=helpers.parseDictToString(gg))
+
+        if event == 'peek_key':
+            peek_enabled = not peek_enabled
+            if peek_enabled:
+                window['steam_api_key'].update(password_char='')
+                window['peek_key'].update("Hide")
+            else:
+                window['steam_api_key'].update(password_char='*')
+                window['peek_key'].update("Show")
 
         if event == 'validate_api_key':
             api_test_result_element = window['api_key_test_result']
