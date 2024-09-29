@@ -1,6 +1,7 @@
 import json
-import os
 import logging
+import os
+
 import modules.constants as c
 
 logger = logging.getLogger(__name__)
@@ -31,7 +32,12 @@ def setUsernameOnOS():
 
 def getAppDataPath():
     setUsernameOnOS()
-    return 'C:/Users/' + OS_USERNAME + '/AppData/Roaming/' + c.APP_NAME
+    target_path =  'C:/Users/' + OS_USERNAME + '/AppData/Roaming/' + c.APP_NAME
+
+    if not os.path.exists(target_path): os.makedirs(target_path)
+
+    return target_path
+
 
 
 def tryAppendNewUserToCache(display_name: str, steam_id: str):
