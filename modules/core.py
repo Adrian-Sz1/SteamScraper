@@ -1,28 +1,16 @@
-import json
-import csv
-import yaml
-import os
 from bs4 import BeautifulSoup
-import requests
 import modules.helpers as helpers
-import modules as modules
 import modules.programsettings as ps
 import logging
 import modules.constants as c
 import modules.enums.file_types as file_types
+import modules.file_exporters as file_exporters
+from modules.api_handler import sendRequestWrapper, resolve_vanity_url, get_owned_games
+import modules.file_manager as file_manager
 
 logger = logging.getLogger(__name__)
 
 output_dict = {}  # username : error/success result
-
-
-def validate_api_key(api_key: str):
-    r = sendRequestWrapper('http://api.steampowered.com/ISteamUser/GetPlayerSummaries/v0002/?key='+api_key+'&steamids=76561197960435530')
-    if r.status_code == 200:
-        logger.info('Steam API key is VALID')
-    else:
-        logger.info('Steam API key is INVALID')
-    return r.status_code == 200
 
 
 def start(api_key: str, usernames: str, folder_path: str, search_options: dict):
@@ -64,48 +52,27 @@ def parseInput(input_usernames: str):
     return input_usernames.split(',')
 
 
-def tryCreateEmptyOutputFile(steamId: str, folder_path: str, file_type: str):
-    """
-    Create a new empty file of a given file type. If file already exists in the path specified, the existing file is returned.
-    """
-    if not file_types.SupportedFileType.is_supported(file_type):
-        logger.info(''.join([file_type,
-                             ' is not a supported file type, file "',
-                             steamId,
-                             '_',
-                             modules.currentDate,
-                             '" will not be saved']))
-        return None
-
-    file_name = steamId + '_' + modules.currentDate + '.' + file_type
-
-    file_dir = ''
-    match ps.create_sub_folders:
-        case True: file_dir = folder_path + '/' + file_type + '/' + steamId + '/'
-        case False: file_dir = folder_path + '/' + file_type + '/'
-
-    if not os.path.exists(file_dir):
-        os.makedirs(file_dir)
-
-    file = open(file_dir + file_name, "w")
-
-    return file
-
-
 def writeOutputFile(steamId: str, content, folder_path: str, file_type: str):
-    file = tryCreateEmptyOutputFile(steamId, folder_path, file_type)
+    file_name = file_manager.construct_default_file_user_name(steam_id=steamId, file_type=file_type)
+
+    if ps.create_sub_folders:
+        file_manager.construct_file_dir_user_sub_folders(folder_path, file_type, steamId)
+    else:
+        file_manager.construct_file_dir_default_path(folder_path, file_type)
+
+    file = file_manager.create_file_in_dir(folder_path, file_name)
     logger.info('Writing to "' + file.name + '"')
     match file_type:
         case file_types.SupportedFileType.csv.name:
-            generateCsvDataFile(file, content)
+            file_exporters.generateCsvDataFile(file, content)
         case file_types.SupportedFileType.json.name:
-            generateJsonDataFile(file, content)
+            file_exporters.generateJsonDataFile(file, content)
         case file_types.SupportedFileType.yaml.name:
-            generateYamlDataFile(file, content)
+            file_exporters.generateYamlDataFile(file, content)
 
 
 def remapOutputData(jsonData: dict):
-    games_dict = jsonData['response']['games']
+    games_dict = jsonData['games']
 
     total_playtime = 0
     total_playtime2weeks = 0
@@ -121,7 +88,7 @@ def remapOutputData(jsonData: dict):
             game['playtime_2weeks'] = 0
 
     output_template = {
-        "game_count": jsonData['response']['game_count'],
+        "game_count": jsonData['game_count'],
         "total_playtime": total_playtime,
         "total_playtime2weeks": total_playtime2weeks,
         "games": games_dict
@@ -130,84 +97,37 @@ def remapOutputData(jsonData: dict):
     return output_template
 
 
-def generateJsonDataFile(file, content):
-
-    save_file_json = json.dumps(content, indent=2)
-
-    file.write(save_file_json)
-
-    file.close()
-
-    logger.info('Json data file created for "' + file.name + '"')
-
-
-def generateYamlDataFile(file, content):
-    yaml.dump(content, file, allow_unicode=True)
-
-    file.close()
-
-    logger.info('Yaml data file created for "' + file.name + '"')
-
-
-def generateCsvDataFile(file, content: dict):
-    games = content['games']
-    games1 = games[0].keys()
-    with file as f:
-        w = csv.DictWriter(f, games1)
-        w.writeheader()
-        for game in games:
-            w.writerow(game)
-
-    f.close()
-
-    logger.info('Csv data file created for "' + file.name)
-
-    return True
-
-
 def scrapeGameData(api_key: str, steamId: str, folder_path: str):
     username = steamId
     logger.info('Scraping game data for user ' + steamId)
-    url = ''
+
     # Check if we are dealing with a vanity url or an actual steam id
     if steamId.isalnum() or not steamId.__len__() == 17:
-        logger.info(steamId + ' is alphanumeric fetching steam64id...')
         if steamId not in ps.searched_users_dict:
-            url = 'https://api.steampowered.com/ISteamUser/ResolveVanityURL/v1/?key=' + api_key + '&vanityurl=' + steamId
-            r = sendRequestWrapper(url)
-            rjson = r.json()
-            gg = rjson['response']
+            logger.info(username + ' fetching steam64id...')
+            steamId = resolve_vanity_url(api_key=api_key, vanity_url_name=steamId)
 
-            ps.tryAppendNewUserToCache(steamId, gg['steamid'])
+            if steamId is None:
+                logger.info('Steam id is empty, aborting...')
+                return
 
-            steamId = gg['steamid']
-            logger.info(steamId + ' fetched from Steam API')
-
+            ps.tryAppendNewUserToCache(vanity_url_name=username, steam_id=steamId)
         else:
             logger.info(steamId + ' found in search history')
             steamId = ps.searched_users_dict[steamId]
 
+    game_list = get_owned_games(api_key=api_key, steam64_id=steamId)
 
-    url = 'http://api.steampowered.com/IPlayerService/GetOwnedGames/v0001/?key=' + api_key + '&steamid=' + steamId + '&include_appinfo=false&include_played_free_games=true&format=json'
-    logger.info('Sending Owned Games request for user with id "' + steamId + '"')
-
-    r = sendRequestWrapper(url)
-
-    if 'games' not in r.json():
-        logger.info('User Games is empty, file will not be saved')
+    if game_list is None:
         output_dict[username] = helpers.OutputUserStatus.ACCOUNT_PRIVATE.value
         return
 
-    writeOutputFile(steamId, remapOutputData(r.json()), folder_path, ps.output_file_type)
+    writeOutputFile(steamId, remapOutputData(game_list), folder_path, ps.output_file_type)
+    return
+
+
 
 # Get game names using appids https://store.steampowered.com/api/appdetails?appids=2630
 
 
-def sendRequestWrapper(url: str):
-    r = requests.get(url)
 
-    url = url.replace(ps.steam_api_key, '[STEAM API KEY REDACTED]')
-
-    logger.info(''.join(['Status code ', str(r.status_code), ' for request ', url]))
-
-    return r

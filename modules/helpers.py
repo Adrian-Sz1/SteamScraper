@@ -1,5 +1,7 @@
 from enum import Enum
+import logging
 
+logger = logging.getLogger(__name__)
 
 class OutputUserStatus(Enum):
     NOT_FOUND = 'User not found'
@@ -87,3 +89,14 @@ def dictToString(content: dict, delimiter: str):
     output = output.removesuffix(delimiter)
 
     return output
+
+
+def validate_steam64id_format(steam_id: str):
+    if not isinstance(steam_id, str):
+        raise TypeError('Invalid steam_id type')
+
+    if steam_id.isalnum() or steam_id.__len__() != 17:
+        logger.warning('steam_id is invalid')
+        return False
+
+    return True

@@ -40,11 +40,11 @@ def getAppDataPath():
 
 
 
-def tryAppendNewUserToCache(display_name: str, steam_id: str):
-    if str.isspace(display_name) or str.isspace(steam_id):
+def tryAppendNewUserToCache(vanity_url_name: str, steam_id: str):
+    if str.isspace(vanity_url_name) or str.isspace(steam_id):
         return
 
-    searched_users_dict[display_name] = steam_id
+    searched_users_dict[vanity_url_name] = steam_id
     writeJsonFile(appdata_path + '/' + c.SEARCHED_USERS_NAME, searched_users_dict, 'w')
 
 

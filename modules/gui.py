@@ -2,6 +2,7 @@ import PySimpleGUI as sg
 import modules.programsettings as ps
 import modules.core as c
 import modules.helpers as helpers
+import modules.api_handler as api_handler
 
 
 def create_window(
@@ -33,11 +34,11 @@ def create_window(
                         sg.FolderBrowse()], [sg.Checkbox('Create a sub-folder for each user', key='user_sub_folder', enable_events=True, font=FONT_OPTION,
                                                          default=create_sub_folders,
                                                          tooltip='Each user has their own folder generated which their data is outputted in to')],
-                       [sg.Checkbox('Inventory', key='inventory_checkbox', enable_events=True, default=search_for_options['include_inventory']),
+                       [sg.Checkbox('Inventory', key='inventory_checkbox', disabled=True, enable_events=True, default=search_for_options['include_inventory']),
                         sg.Checkbox('Games', key='games_checkbox', enable_events=True, default=search_for_options['include_games']),
-                        sg.Checkbox('Friends', key='friends_checkbox', enable_events=True, default=search_for_options['include_friends']),
-                        sg.Checkbox('Reviews', key='reviews_checkbox', enable_events=True, default=search_for_options['include_reviews']),
-                        sg.Checkbox('Profile Comments', key='profile_comments_checkbox', enable_events=True, default=search_for_options['include_profile_comments'])],
+                        sg.Checkbox('Friends', key='friends_checkbox', disabled=True, enable_events=True, default=search_for_options['include_friends']),
+                        sg.Checkbox('Reviews', key='reviews_checkbox', disabled=True, enable_events=True, default=search_for_options['include_reviews']),
+                        sg.Checkbox('Profile Comments', key='profile_comments_checkbox', disabled=True, enable_events=True, default=search_for_options['include_profile_comments'])],
                        [sg.Button('Save Preferences', visible=False, key='save_button'), sg.Text('', key='preferences_info_text')],
                        [sg.Frame('Results', [[sg.Multiline('', key='result_output', size=(58, 5), disabled=True)]])]]
     parameters_layout = [[sg.Text('Parameters', font=FONT_HEADING), sg.Push()], [sg.HorizontalSeparator()],
@@ -97,7 +98,7 @@ def create_window(
 
         if event == 'validate_api_key':
             api_test_result_element = window['api_key_test_result']
-            if c.validate_api_key(window['steam_api_key'].Get()):
+            if api_handler.validate_api_key(window['steam_api_key'].Get()):
                 api_test_result_element.Update(text_color='green', value='OK')
             else:
                 api_test_result_element.Update(text_color='red', value='NOT OK')
