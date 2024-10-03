@@ -6,7 +6,6 @@ logger = logging.getLogger(__name__)
 class OutputUserStatus(Enum):
     NOT_FOUND = 'User not found'
     ACCOUNT_PRIVATE = 'Account is private'
-    YOU_MUST_BE_LOGGED_IN = 'Content cannot be accessed without login'
     UNEXPECTED_ERROR = 'Unexpected error has occurred'
     SUCCESSFUL = 'Success'
 
@@ -93,10 +92,10 @@ def dictToString(content: dict, delimiter: str):
 
 def validate_steam64id_format(steam_id: str):
     if not isinstance(steam_id, str):
-        raise TypeError('Invalid steam_id type')
+        raise TypeError(f"steam_id: {steam_id} is not of a valid type '{steam_id.__class__}'. Should be of type 'str''")
 
-    if steam_id.isalnum() or steam_id.__len__() != 17:
-        logger.warning('steam_id is invalid')
+    if not steam_id.isnumeric() or steam_id.__len__() != 17:
+        logger.warning(f"Steam64Id: {steam_id} is invalid. Not numeric or length is not 17 chars long")
         return False
 
     return True

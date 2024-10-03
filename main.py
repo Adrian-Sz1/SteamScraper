@@ -1,29 +1,55 @@
-import modules.gui
-from modules.programsettings import readSettings
-import modules.programsettings as ps
 import logging
+from logging.handlers import MemoryHandler
+
+from models.config_model import ConfigModel
+from viewmodels.core_viewmodel import CoreViewModel
 
 logger = logging.getLogger(__name__)
 
 
-def initialize():
-    logger.info('Starting Initialization')
-    readSettings()
+def main():
+    temp_handler = MemoryHandler(capacity=10000, target=None)
+    stream_handler = logging.StreamHandler()
 
-    modules.gui.create_window(ps.output_folder_path, ps.output_file_type, ps.create_sub_folders, ps.previous_parameters,
-                              ps.steam_api_key, ps.search_options)
+    logging_format = '[%(asctime)s][%(levelname)s][%(module)s] - %(message)s'
+    formatter = logging.Formatter(logging_format, datefmt='%Y-%m-%d %H:%M:%S')
+
+    temp_handler.setFormatter(formatter)
+    stream_handler.setFormatter(formatter)
+
+    logging.basicConfig(level=logging.INFO, handlers=[temp_handler, stream_handler])
+
+    try:
+        config = ConfigModel()
+        config.load_config()
+
+        file_handler = logging.FileHandler(config.root_directory + '/Steam_User_Scraper.log', delay=True)
+        file_handler.setFormatter(formatter)
+
+        logging.getLogger().addHandler(file_handler)
+        temp_handler.setTarget(file_handler)
+        temp_handler.flush()
+
+        logging.getLogger().removeHandler(temp_handler)
+
+    except Exception as e:
+        logging.error("An error occurred while loading configuration", exc_info=True)
+
+        temp_file_handler = logging.FileHandler('temp_log.log', delay=True)
+        temp_file_handler.setFormatter(formatter)
+        logging.getLogger().addHandler(temp_file_handler)
+        temp_handler.setTarget(temp_file_handler)
+        temp_handler.flush()
+
+        logging.getLogger().removeHandler(temp_handler)
+        return
+
+    viewmodel = CoreViewModel(config)
+    viewmodel.run()
 
 
 if __name__ == "__main__":
-    FORMAT = '[%(asctime)s][%(levelname)s][%(module)s] - %(message)s'
-
-    logging.basicConfig(
-                        level=logging.INFO,
-                        format=FORMAT,
-                        datefmt='%Y-%m-%d %H:%M:%S',
-                        handlers=[logging.FileHandler(ps.getAppDataPath() + '/Steam_User_Scraper.log'),
-                                  logging.StreamHandler()])
 
     logger.info('Starting Steam User Scraper')
-    initialize()
-    logger.info('Process finished with exit code 0')
+    main()
+    logger.info('Application shutting down...')
