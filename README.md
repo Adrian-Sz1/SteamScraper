@@ -1,3 +1,8 @@
+![Static Badge](https://img.shields.io/badge/release-v1.0.0-green?style=flat-square)
+![Static Badge](https://img.shields.io/badge/python_version-3.11_|_3.12-green?style=flat-square)
+![Static Badge](https://img.shields.io/badge/os-Win10-blue?style=flat-square)
+![GitHub code size in bytes](https://img.shields.io/github/languages/code-size/Adrian-Sz1/SteamScraper?style=flat-square)
+
 # Steam User Scraper
 
 ## About

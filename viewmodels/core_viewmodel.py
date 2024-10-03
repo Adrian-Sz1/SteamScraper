@@ -58,7 +58,7 @@ class CoreViewModel:
 
 
     # TODO: Split this in to functions - it's too big and doesn't adhere to single responsibility principle
-    def scrapeGameData(self, steam64id: str):
+    def scrape_game_data(self, steam64id: str):
         username = steam64id
         logger.info('Scraping game data for user ' + steam64id)
 
@@ -203,7 +203,7 @@ class CoreViewModel:
             if self.settings.search_options['include_inventory']:
                 print('include_inventory')
             if self.settings.search_options['include_games']:
-                self.scrapeGameData(steam_id)
+                self.scrape_game_data(steam_id)
             if self.settings.search_options['include_friends']:
                 print('include_friends')
             if self.settings.search_options['include_reviews']:
