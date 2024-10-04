@@ -144,21 +144,53 @@ class FileManager:
 
     @staticmethod
     def check_for_duplicate_names_in_dir(target_dir: str, file_name: str):
+        """
+        Checks for duplicate file names in the specified target directory and generates a new valid file name
+        if duplicates are found. The function is case-sensitive and considers two files as duplicates only if their names and types
+        (extensions) are the same.
+
+        This function is useful for ensuring unique file names when saving files in a directory, avoiding
+        accidental overwrites.
+
+        Example:
+            - 'file_name.json' and 'file_name.csv' would not be treated as duplicates, as they have different
+              file types.
+            - 'file_name.json' and 'file_name.json' would be treated as duplicates.
+
+        Args:
+            target_dir (str): The target directory where the search for duplicates should take place.
+            file_name (str): The name of the file (including its extension) to check for duplicates.
+
+        Returns:
+            str: A modified version of the original file_name with a prefixed index (e.g., '5_file_name.json')
+                 that is 1 higher than the total count of duplicate files in the directory. If no duplicates are
+                 found, it returns the original file_name.
+
+        Raises:
+            FileNotFoundError: If the specified target_dir does not exist.
+
+        Notes:
+            - The function handles special characters in file names but may not preserve their formatting in the
+              index.
+            - It is recommended to ensure that the target_dir path is valid and accessible before calling this
+              function.
+        """
+
         files_in_dir = os.listdir(target_dir)
 
-        counter = 0
+        counter = 1
 
         for file in files_in_dir:
-            if not file.__contains__(file_name):
+
+            if not file == file_name and not file == f"{counter}_{file_name}":
                 continue
+
             counter += 1
 
-        if counter == 0:
+        if counter == 1:
             return file_name
 
-        return f"{counter+1}_{file_name}"
-
-
+        return f"{counter}_{file_name}"
 
 class InvalidParameterError(Exception):
     """Raised when a parameter of type string is None, empty or whitespace"""
