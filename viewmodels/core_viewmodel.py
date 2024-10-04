@@ -13,7 +13,7 @@ from modules import helpers, currentDate
 from modules.enums import file_types
 from modules.helpers.file_exporters import FileExporters
 from modules.helpers.file_manager import FileManager
-from modules.helpers.common import validate_steam64id_format
+from modules.helpers.common import validate_steam64id_format, remap_output_game_data
 from views.gui import create_window
 
 logger = logging.getLogger(__name__)
@@ -68,6 +68,8 @@ class CoreViewModel:
             self.output_info_dict[username] = helpers.common.OutputUserStatus.ACCOUNT_PRIVATE.value
             return
 
+        game_list = remap_output_game_data(game_list)
+
         # e.g. ../Steam User Scraper/data/json/username/username_todaysdate.json
         # or ../Steam User Scraper/data/json/username_todaysdate.json
 
@@ -83,8 +85,6 @@ class CoreViewModel:
         full_file_name = f"{username}_{currentDate}.{self.settings.output_file_type}"
 
         file = FileManager.create_file_in_dir(working_dir=str(target_dir), file_name=full_file_name)
-
-        # TODO: Reformat game list to include required keys like total hours p2w etc.
 
         match self.settings.output_file_type:
             case file_types.SupportedFileType.csv.name:
@@ -221,29 +221,3 @@ class CoreViewModel:
             self.output_info_dict[username] = helpers.common.OutputUserStatus.NOT_FOUND.value
             return False
         return True
-
-    # TODO: remapOutputData function needs refactored in order to fit in with the new MVVM pattern approach
-    # def remapOutputData(jsonData: dict):
-    #     games_dict = jsonData['games']
-    #
-    #     total_playtime = 0
-    #     total_playtime2weeks = 0
-    #
-    #     # TODO: This is inefficient, most games will not have this field - this means tech debt :)
-    #     for game in games_dict:
-    #
-    #         total_playtime += game['playtime_forever']
-    #
-    #         if 'playtime_2weeks' in game:
-    #             total_playtime2weeks += game['playtime_2weeks']
-    #         else:
-    #             game['playtime_2weeks'] = 0
-    #
-    #     output_template = {
-    #         "game_count": jsonData['game_count'],
-    #         "total_playtime": total_playtime,
-    #         "total_playtime2weeks": total_playtime2weeks,
-    #         "games": games_dict
-    #     }
-    #
-    #     return output_template

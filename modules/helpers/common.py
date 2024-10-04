@@ -1,5 +1,6 @@
 from enum import Enum
 import logging
+from typing import Dict, Any
 
 logger = logging.getLogger(__name__)
 
@@ -99,3 +100,31 @@ def validate_steam64id_format(steam_id: str):
         return False
 
     return True
+
+
+def remap_output_game_data(game_data: Dict[str, Any]):
+    """
+    Remaps the output game data by calculating total playtime and total playtime for the last 2 weeks.
+
+    :param game_data: Dictionary containing game data with keys 'games' and 'game_count'.
+    :return: A remapped dictionary with game data including total playtime and playtime for the last 2 weeks.
+    """
+    games_dict = game_data.get('games', [])
+
+    total_playtime = 0
+    total_playtime_last_2weeks = 0
+
+    for game in games_dict:
+        total_playtime += game.get('playtime_forever', 0)
+        total_playtime_last_2weeks += game.get('playtime_2weeks', 0)
+
+    output_template = {
+        "game_data": {
+            "game_count": game_data.get('game_count', len(games_dict)),
+            "total_playtime": total_playtime,
+            "total_playtime_last_2weeks": total_playtime_last_2weeks,
+            "games": games_dict
+        }
+    }
+
+    return output_template
