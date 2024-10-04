@@ -46,7 +46,7 @@ def create_window(
                          [sg.Multiline(default_text=previous_parameters, key='parameters_multiline', font=FONT_MULTILINE, size=(None, 15), ),
                           sg.Push()]]
     footer_layout = [[sg.Button('Start', font=FONT_OPTION), sg.VPush()]]
-    window = sg.Window('Steam User Scraper v1.0.0',
+    window = sg.Window('Steam User Scraper v0.4.0',
                        [header_layout, sg.vtop([sg.Push(), sg.Column(settings_layout), sg.Column(parameters_layout), sg.Push()]),
                         footer_layout], resizable=True)
     return window

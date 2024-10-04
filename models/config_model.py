@@ -13,7 +13,7 @@ class ConfigModel:
         self.default_config = {
             "app_name": 'Steam User Scraper',
             "root_directory": f'C:\\Users\\{os.getenv("USERNAME")}\\AppData\\Roaming\\', # App name is appended in root_directory getter,
-            "build_version": 'v1.0.0',
+            "build_version": 'v0.4.0',
             "copyright_license": 'None',
             "author": 'Adrian Sz'
         }

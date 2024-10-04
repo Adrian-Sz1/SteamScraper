@@ -60,7 +60,7 @@ class FileExporters:
         Each dictionary in the list represents a row, and the keys of the dictionaries
         represent the column headers for the CSV file.
         """
-        games = content['games']
+        games = content['game_data']['games']
         games1 = games[0].keys()
         with file as f:
             w = csv.DictWriter(f, games1)

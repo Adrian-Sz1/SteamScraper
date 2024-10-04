@@ -1,6 +1,6 @@
-![Static Badge](https://img.shields.io/badge/release-v1.0.0-green?style=flat-square)
+![Static Badge](https://img.shields.io/badge/release-v0.4.0-green?style=flat-square)
 ![Static Badge](https://img.shields.io/badge/python_version-3.11_|_3.12-green?style=flat-square)
-![Static Badge](https://img.shields.io/badge/os-Win10-blue?style=flat-square)
+![Static Badge](https://img.shields.io/badge/os-windows-blue?style=flat-square)
 ![GitHub code size in bytes](https://img.shields.io/github/languages/code-size/Adrian-Sz1/SteamScraper?style=flat-square)
 
 # Steam User Scraper
@@ -20,7 +20,7 @@ Steam User Scraper (SUS) is a GUI based program designed to scrape a user's publ
   - Friends
   - Reviews
   - Profile Comments 
-- Single or batch scraping using comma delimited strings
+- Single or batch scraping using comma-delimited strings
 
 ### Limitations
 - Only users with public profiles are supported
@@ -34,9 +34,13 @@ Steam User Scraper (SUS) is a GUI based program designed to scrape a user's publ
 
 ## Installation
 
+
 ### Requirements
-#### Python Version
-  - 3.11.9 and above
+#### Recommended Python Versions:
+  - 3.11 and above
+
+Older have not yet been tested and verified
+
 #### Packages
 See [Project Dependencies](https://github.com/Adrian-Sz1/SteamScraper/network/dependencies)
 

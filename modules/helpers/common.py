@@ -116,7 +116,7 @@ def remap_output_game_data(game_data: Dict[str, Any]):
 
     for game in games_dict:
         total_playtime += game.get('playtime_forever', 0)
-        total_playtime_last_2weeks += game.get('playtime_2weeks', 0)
+        total_playtime_last_2weeks += game.setdefault('playtime_2weeks', 0)
 
     output_template = {
         "game_data": {
