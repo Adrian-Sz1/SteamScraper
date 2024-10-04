@@ -16,6 +16,15 @@ class FileExporters:
             :param file: The file object to which the JSON content will be written.
             :param content: The content to be converted into JSON format and written to the file.
         """
+
+        games = content.get('game_data', {}).get('games', [])
+
+        if not file:
+            raise FileNotFoundError("File provided could not be accessed or doesn't exist")
+
+        if not games:
+            raise ValueError("No game data available to generate Json file.")
+
         save_file_json = json.dumps(content, indent=2)
 
         file.write(save_file_json)
@@ -33,6 +42,14 @@ class FileExporters:
         :param file: The file object to which the YAML content will be written.
         :param content: The content to be converted into YAML format and written to the file.
         """
+        games = content.get('game_data', {}).get('games', [])
+
+        if not file:
+            raise FileNotFoundError("File provided could not be accessed or doesn't exist")
+
+        if not games:
+            raise ValueError("No game data available to generate Json file.")
+
         yaml.dump(content, file, allow_unicode=True)
 
         file.close()
@@ -60,10 +77,23 @@ class FileExporters:
         Each dictionary in the list represents a row, and the keys of the dictionaries
         represent the column headers for the CSV file.
         """
-        games = content['game_data']['games']
-        games1 = games[0].keys()
+
+        games = content.get('game_data', {}).get('games', [])
+
+        if not file:
+            raise FileNotFoundError("File provided could not be accessed or doesn't exist")
+
+        if not games:
+            raise ValueError("No game data available to generate CSV file.")
+
+        first_game = games[0]
+        if not isinstance(first_game, dict):
+            raise ValueError("Game element should be a dictionary.")
+
+        headers = first_game.keys()
+
         with file as f:
-            w = csv.DictWriter(f, games1)
+            w = csv.DictWriter(f, headers)
             w.writeheader()
             for game in games:
                 w.writerow(game)
