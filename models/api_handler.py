@@ -1,6 +1,8 @@
 import logging
-import requests
 import re
+
+import requests
+
 from modules.helpers.file_manager import InvalidParameterError
 
 logger = logging.getLogger(__name__)
@@ -16,14 +18,9 @@ class SteamAPI:
     def __get__(self, instance, owner):
         return self.api_key
 
-    def set_api_key(self, new_api_key: str) -> bool:
-        """Setter method to update the API key"""
-        if not SteamAPI.validate_steam_api_key_format(new_api_key):
-            logger.info(f"API key was not updated due to incorrect format")
-            return False
+    def __set__(self, new_api_key: str):
         self.api_key = new_api_key
         logger.info(f"API key has been updated")
-        return True
 
     def validate_api_key(self, api_key:str):
 

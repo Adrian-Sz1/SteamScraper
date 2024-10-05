@@ -1,3 +1,4 @@
+import json
 import logging
 import os.path
 
@@ -11,9 +12,9 @@ from models.searched_users_model import SearchedUsersModel
 from models.settings_model import SettingsModel
 from modules import helpers, currentDate
 from modules.enums import file_types
+from modules.helpers.common import validate_steam64id_format, remap_output_game_data
 from modules.helpers.file_exporters import FileExporters
 from modules.helpers.file_manager import FileManager
-from modules.helpers.common import validate_steam64id_format, remap_output_game_data
 from views.gui import create_window
 
 logger = logging.getLogger(__name__)
@@ -123,6 +124,8 @@ class CoreViewModel:
                 self.settings.overwrite_enabled = self.ui_window['overwrite_enabled'].Get()
                 self.settings.steam_api_key = self.ui_window['steam_api_key'].Get()
 
+                self.api.api_key = self.settings.steam_api_key
+
                 result_output = self.ui_window['preferences_info_text']
                 result_output.Update(text_color='green')
                 result_output.Update('Changes saved')
@@ -149,7 +152,7 @@ class CoreViewModel:
 
                 self.start()
 
-                self.ui_window['result_output'].Update(value=helpers.common.parseDictToString(self.output_info_dict))
+                self.ui_window['result_output'].Update(value=json.dumps(self.output_info_dict))
 
             if event == 'peek_key':
                 self.peek_enabled = not self.peek_enabled
@@ -175,7 +178,7 @@ class CoreViewModel:
         logger.info(f"Scraping has started with the following attributes: "
                     f"usernames='{usernames}' "
                     f"folder_path='{self.settings.output_folder_path}' "
-                    f"search_options='{helpers.common.dictToString(self.settings.search_options, ', ')}")
+                    f"search_options='{json.dumps(self.settings.search_options)}")
 
         self.output_info_dict.clear()
 
