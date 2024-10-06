@@ -1,5 +1,11 @@
+from unittest import mock
+from unittest.mock import mock_open
+
 import pytest
+
 from modules.helpers.file_manager import FileManager
+
+
 class TestCheckForDuplicateNamesInDir:
 
     @staticmethod
@@ -132,3 +138,241 @@ class TestCheckDirectoryExists:
         result = FileManager.check_directory_exists("non_existent_dir")
         mock_makedirs.assert_called_once_with("non_existent_dir")
         assert result is False
+
+class TestConstructDefaultFileUserName:
+
+    @staticmethod
+    @pytest.fixture
+    def mock_data(mocker):
+        return mocker.patch('modules.currentDate', '05-10-2024')
+
+    @staticmethod
+    def test_construct_valid_file_user_name(mock_data):
+        steam64id = '76561198000000000'
+        file_type = 'json'
+        expected_output = '76561198000000000_05-10-2024.json'
+
+        result = FileManager.construct_default_file_user_name(steam64id, file_type)
+        assert result == expected_output
+
+    @staticmethod
+    def test_construct_with_empty_steam64id(mock_data):
+        steam64id = ''
+        file_type = 'csv'
+        with pytest.raises(TypeError):
+            assert FileManager.construct_default_file_user_name(steam64id, file_type)
+
+    @staticmethod
+    def test_construct_with_empty_file_type(mock_data):
+        steam64id = '76561198000000000'
+        file_type = ''
+
+        with pytest.raises(TypeError):
+            assert FileManager.construct_default_file_user_name(steam64id, file_type)
+
+class TestValidateFileType:
+
+    @staticmethod
+    @pytest.fixture
+    def mock_supported_file_type(mocker):
+        return mocker.patch('modules.file_types.SupportedFileType.is_supported')
+
+@pytest.mark.usefixtures("mock_listdir", "mock_exists", "mock_join", "mock_open_function", "mock_valid_params", "mock_directory_check")
+class TestCreateFileInDir:
+
+    @staticmethod
+    @pytest.fixture
+    def mock_listdir(mocker):
+        return mocker.patch('os.listdir', return_value=[])
+
+    @staticmethod
+    @pytest.fixture
+    def mock_open_function(mocker):
+        return mocker.patch('builtins.open', mock.mock_open())
+
+    @staticmethod
+    @pytest.fixture
+    def mock_exists(mocker):
+        return mocker.patch('os.path.exists', return_value=True)
+
+    @staticmethod
+    @pytest.fixture
+    def mock_join(mocker):
+        return mocker.patch('os.path.join', side_effect=lambda *args: '/'.join(args))
+
+    @staticmethod
+    @pytest.fixture
+    def mock_valid_params(mocker):
+        mocker.patch('modules.helpers.file_manager.FileManager.validate_parameters', return_value=True)
+
+    @staticmethod
+    @pytest.fixture
+    def mock_directory_check(mocker):
+        mocker.patch('modules.helpers.file_manager.FileManager.check_directory_exists')
+
+    @staticmethod
+    @pytest.fixture
+    def mock_duplicate_name_check(mocker):
+        return mocker.patch('modules.helpers.file_manager.FileManager.check_for_duplicate_names_in_dir', return_value='file(1).json')
+
+    @staticmethod
+    def test_create_file_valid(mock_open_function, mock_valid_params, mock_directory_check):
+        working_dir = '/mock/path/to/'
+        file_name = 'file.json'
+
+        file = FileManager.create_file_in_dir(working_dir, file_name, overwrite=False)
+
+        mock_open_function.assert_called_once_with('/mock/path/to/file.json', 'x')
+        assert file is not None
+
+    @staticmethod
+    def test_create_file_existing(mock_open_function, mock_valid_params, mock_directory_check):
+        working_dir = '/mock/path/to'
+        file_name = 'file.json'
+
+        mock_open_function.side_effect = [FileExistsError, mock_open()]
+
+        file = FileManager.create_file_in_dir(working_dir, file_name, overwrite=True)
+
+        mock_open_function.assert_called_with('/mock/path/to/file.json', 'w')
+        assert file is not None
+
+    @staticmethod
+    def test_create_file_with_versioning(mock_open_function, mock_valid_params, mock_directory_check,
+                                         mock_duplicate_name_check):
+        working_dir = '/mock/path/to'
+        file_name = 'file.json'
+
+        file = FileManager.create_file_in_dir(working_dir, file_name, overwrite=False)
+
+        mock_open_function.assert_called_once_with('/mock/path/to/file(1).json', 'x')
+        assert file is not None
+
+    @staticmethod
+    @pytest.mark.parametrize("working_dir, file_name", [
+        (5, 'file.json'),
+        ('/valid/dir/', 123)
+    ])
+    def test_create_file_invalid_params(mock_open_function, mock_directory_check, working_dir, file_name):
+
+        with pytest.raises(TypeError):
+            assert FileManager.create_file_in_dir(working_dir, file_name) is None
+
+    @staticmethod
+    def test_create_file_directory_not_exist(mock_open_function, mock_valid_params, mock_directory_check):
+        working_dir = '/mock/path/to'
+        file_name = 'file.json'
+
+        result = FileManager.create_file_in_dir(working_dir, file_name)
+
+        assert result is not None
+
+    @staticmethod
+    def test_create_file_os_error(mock_open_function, mock_valid_params, mock_directory_check):
+        working_dir = '/mock/path/to'
+        file_name = 'file.json'
+
+        mock_open_function.side_effect = OSError("Cannot create file")
+
+        result = FileManager.create_file_in_dir(working_dir, file_name)
+
+        assert result is None
+
+@pytest.mark.usefixtures("mock_exists", "mock_join", "mock_valid_params", "mock_directory_check", "mock_open_function")
+class TestFileManagerLoadFile:
+
+    @staticmethod
+    @pytest.fixture
+    def mock_exists(mocker):
+        return mocker.patch('os.path.exists', return_value=True)
+
+    @staticmethod
+    @pytest.fixture
+    def mock_join(mocker):
+        return mocker.patch('os.path.join', side_effect=lambda *args: '/'.join(args))
+
+    @staticmethod
+    @pytest.fixture
+    def mock_valid_params(mocker):
+        mocker.patch('modules.helpers.file_manager.FileManager.validate_parameters', return_value=True)
+
+    @staticmethod
+    @pytest.fixture
+    def mock_directory_check(mocker):
+        mocker.patch('modules.helpers.file_manager.FileManager.check_directory_exists', return_value=True)
+
+    @staticmethod
+    @pytest.fixture
+    def mock_open_function(mocker):
+        return mocker.patch('builtins.open', mock.mock_open(read_data="data"))
+
+    @staticmethod
+    def test_load_file_valid(mock_open_function):
+        working_dir = '/mock/path/to'
+        file_name = 'file.json'
+
+        file = FileManager.load_file_in_dir(working_dir, file_name)
+
+        mock_open_function.assert_called_once_with('/mock/path/to/file.json', 'r')
+
+        assert file is not None
+
+    @staticmethod
+    def test_load_file_invalid_params():
+        FileManager.validate_parameters = mock.Mock(return_value=False)
+
+        working_dir = '/mock/path'
+        file_name = 'file.json'
+
+        file = FileManager.load_file_in_dir(working_dir, file_name)
+
+        assert file is None
+
+    @staticmethod
+    def test_load_file_directory_does_not_exist():
+        FileManager.check_directory_exists = mock.Mock(return_value=False)
+
+        working_dir = '/mock/path'
+        file_name = 'file.json'
+
+        file = FileManager.load_file_in_dir(working_dir, file_name)
+
+        assert file is None
+
+    @staticmethod
+    def test_load_file_os_error(mock_open_function):
+        mock_open_function.side_effect = OSError("Mocked OS error")
+
+        working_dir = '/mock/path'
+        file_name = 'file.json'
+
+        file = FileManager.load_file_in_dir(working_dir, file_name)
+
+        assert file is None
+
+class TestValidateParameters:
+
+    @staticmethod
+    @pytest.mark.parametrize("working_dir, file_name", [
+        ('/valid/path', 'file.json'),
+        ('C:\\valid\\path', 'file.csv'),
+    ])
+    def test_validate_parameters_valid(working_dir, file_name):
+        result = FileManager.validate_parameters(working_dir, file_name)
+        assert result is True
+
+    @staticmethod
+    @pytest.mark.parametrize("working_dir, file_name", [
+        (None, 'file.json'),
+        ('/valid/path', None),
+        ('/valid/path', ''),
+        ('/valid/path', ' '),
+        (' ', 'file.json'),
+        ('/valid/path', 'file'),
+        (123, 'file.json'),
+        ('/valid/path', 456),
+    ])
+    def test_validate_parameters_invalid(working_dir, file_name):
+        result = FileManager.validate_parameters(working_dir, file_name)
+        assert result is False
+

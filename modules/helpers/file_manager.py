@@ -1,7 +1,8 @@
-import modules.enums.file_types as file_types
-import modules
-import os.path
 import logging
+import os.path
+
+import modules
+import modules.enums.file_types as file_types
 
 logger = logging.getLogger(__name__)
 
@@ -36,6 +37,12 @@ class FileManager:
 
     @staticmethod
     def construct_default_file_user_name(steam64id: str, file_type: str):
+        if not isinstance(steam64id, str) or steam64id.isspace() or steam64id.__len__() == 0:
+            raise TypeError("steam64id is not a valid type or empty")
+        if not isinstance(file_type, str) or file_type.isspace() or file_type.__len__() == 0:
+            raise TypeError("file_type is not a valid type or empty")
+
+
         return steam64id + '_' + modules.currentDate + '.' + file_type
 
     @staticmethod
@@ -90,6 +97,7 @@ class FileManager:
         :param bool overwrite: if true, the file with the same name will be overwritten, else file versioning will be applied e.g. file1.json, file1(1).json
         :returns: file object if file created or already exists, None if failed
         """
+
         if not FileManager.validate_parameters(working_dir, file_name): return None
 
         FileManager.check_directory_exists(working_dir, True)
@@ -99,16 +107,18 @@ class FileManager:
 
         full_path = os.path.join(working_dir, file_name)
 
+        normalized_path = os.path.normpath(full_path).replace("\\", "/")
+
         mode = 'w' if overwrite else 'x'
         try:
-            file = open(full_path, mode)
-            logger.info(f"File '{full_path}' has been created or opened in '{mode}' mode.")
+            file = open(normalized_path, mode)
+            logger.info(f"File '{normalized_path}' has been created or opened in '{mode}' mode.")
             return file
         except FileExistsError:
-            logger.info(f"File '{full_path}' exists, opening in 'w' mode instead.")
-            return open(full_path, 'w')
+            logger.info(f"File '{normalized_path}' exists, opening in 'w' mode instead.")
+            return open(normalized_path, 'w')
         except OSError as e:
-            logger.exception(f"Error creating file '{full_path}': {e}")
+            logger.exception(f"Error creating file '{normalized_path}': {e}")
             return None
 
     @staticmethod
