@@ -170,13 +170,6 @@ class TestConstructDefaultFileUserName:
         with pytest.raises(TypeError):
             assert FileManager.construct_default_file_user_name(steam64id, file_type)
 
-class TestValidateFileType:
-
-    @staticmethod
-    @pytest.fixture
-    def mock_supported_file_type(mocker):
-        return mocker.patch('modules.file_types.SupportedFileType.is_supported')
-
 @pytest.mark.usefixtures("mock_listdir", "mock_exists", "mock_join", "mock_open_function", "mock_valid_params", "mock_directory_check")
 class TestCreateFileInDir:
 
