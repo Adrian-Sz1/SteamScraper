@@ -1,13 +1,18 @@
 import json
 import logging
 
+from PySide6.QtCore import QObject
+
 import modules.helpers.constants as constants
 from modules.helpers.file_manager import FileManager
 
 logger = logging.getLogger(__name__)
 
-class SettingsModel:
+class SettingsModel(QObject):
+
     def __init__(self, working_dir: str):
+        super(SettingsModel, self).__init__()
+
         self.working_dir = working_dir
         self.file_name = constants.SETTINGS_FILE_NAME
         self.default_preferences = {
@@ -60,7 +65,8 @@ class SettingsModel:
 
     @output_folder_path.setter
     def output_folder_path(self, value):
-        self.preferences['preferences']['output_folder_path'] = value
+        if self.preferences['preferences']['output_folder_path'] != value:
+            self.preferences['preferences']['output_folder_path'] = value
 
     @property
     def output_file_type(self):
@@ -68,7 +74,8 @@ class SettingsModel:
 
     @output_file_type.setter
     def output_file_type(self, value):
-        self.preferences['preferences']['output_file_type'] = value
+        if self.preferences['preferences']['output_file_type'] != value:
+            self.preferences['preferences']['output_file_type'] = value
 
     @property
     def create_sub_folders(self):
@@ -76,7 +83,8 @@ class SettingsModel:
 
     @create_sub_folders.setter
     def create_sub_folders(self, value):
-        self.preferences['preferences']['create_sub_folders'] = value
+        if self.preferences['preferences']['create_sub_folders'] != value:
+            self.preferences['preferences']['create_sub_folders'] = value
 
     @property
     def overwrite_enabled(self):
@@ -84,7 +92,8 @@ class SettingsModel:
 
     @overwrite_enabled.setter
     def overwrite_enabled(self, value):
-        self.preferences['preferences']['overwrite_enabled'] = value
+        if self.preferences['preferences']['overwrite_enabled'] != value:
+            self.preferences['preferences']['overwrite_enabled'] = value
 
     @property
     def previous_parameters(self):
@@ -92,7 +101,8 @@ class SettingsModel:
 
     @previous_parameters.setter
     def previous_parameters(self, value):
-        self.preferences['preferences']['previous_parameters'] = value
+        if self.preferences['preferences']['previous_parameters'] != value:
+            self.preferences['preferences']['previous_parameters'] = value
 
     @property
     def steam_api_key(self):
@@ -100,7 +110,8 @@ class SettingsModel:
 
     @steam_api_key.setter
     def steam_api_key(self, value):
-        self.preferences['preferences']['steam_api_key'] = value
+        if self.preferences['preferences']['steam_api_key'] != value:
+            self.preferences['preferences']['steam_api_key'] = value
 
     @property
     def search_options(self):
@@ -108,4 +119,5 @@ class SettingsModel:
 
     @search_options.setter
     def search_options(self, value):
-        self.preferences['preferences']['search_options'] = value
+        if self.preferences['preferences']['search_options'] != value:
+            self.preferences['preferences']['search_options'] = value

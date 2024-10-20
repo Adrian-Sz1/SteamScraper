@@ -1,0 +1,16 @@
+IconLineEdit {
+    background-color: #f0f0f0;
+    border: 1px solid #cccccc;
+    border-radius: 5px;
+}
+
+IconLineEdit QLineEdit {
+    background-color: #ffffff;
+    border: none;
+    padding: 5px;
+}
+
+IconLineEdit QPushButton {
+    border: none;
+    background-color: transparent;
+}

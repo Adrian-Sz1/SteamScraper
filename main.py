@@ -1,8 +1,10 @@
 import logging
 from logging.handlers import MemoryHandler
 
+from PySide6.QtWidgets import QApplication
+
 from models.config_model import ConfigModel
-from viewmodels.core_viewmodel import CoreViewModel
+from views.basic_view import BasicWindow
 
 logger = logging.getLogger(__name__)
 
@@ -18,6 +20,7 @@ def main():
     stream_handler.setFormatter(formatter)
 
     logging.basicConfig(level=logging.INFO, handlers=[temp_handler, stream_handler])
+    # logging.basicConfig(level=logging.INFO, handlers=[temp_handler])
 
     try:
         config = ConfigModel()
@@ -31,7 +34,6 @@ def main():
         temp_handler.flush()
 
         logging.getLogger().removeHandler(temp_handler)
-
     except Exception as e:
         logging.error("An error occurred while loading configuration", exc_info=True)
 
@@ -44,8 +46,12 @@ def main():
         logging.getLogger().removeHandler(temp_handler)
         return
 
-    viewmodel = CoreViewModel(config)
-    viewmodel.run()
+    app = QApplication([])
+
+    main_window = BasicWindow()
+    main_window.show()
+
+    app.exec()
 
 
 if __name__ == "__main__":

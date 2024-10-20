@@ -3,6 +3,7 @@ import logging
 import os.path
 
 import PySimpleGUI as sg
+from PySide6.QtCore import QObject, Signal
 from bs4 import BeautifulSoup
 
 import modules.helpers.constants as c
@@ -19,11 +20,37 @@ from views.gui import create_window
 
 logger = logging.getLogger(__name__)
 
-class CoreViewModel:
+class CoreViewModel(QObject):
+    dataChanged = Signal(str)
+    settingsValueChanged = Signal(object)
+
+
     def __init__(self, config_model: ConfigModel):
+        super(CoreViewModel, self).__init__()
+
         self.config = config_model
 
+        # region configModel signals
+
+        # endregion
+
         self.settings = SettingsModel(self.config.root_directory)
+
+        # region SettingsModel signals
+        self.settings.outputFolderPathChanged.connect(
+            lambda val: self.settingsValueChanged.emit(("output_folder_path", val)))
+        self.settings.outputFileTypeChanged.connect(
+            lambda val: self.settingsValueChanged.emit(("output_file_type", val)))
+        self.settings.createSubFoldersChanged.connect(
+            lambda val: self.settingsValueChanged.emit(("create_sub_folders", val)))
+        self.settings.overwriteEnabledChanged.connect(
+            lambda val: self.settingsValueChanged.emit(("overwrite_enabled", val)))
+        self.settings.previousParametersChanged.connect(
+            lambda val: self.settingsValueChanged.emit(("previous_parameters", val)))
+        self.settings.steamApiKeyChanged.connect(lambda val: self.settingsValueChanged.emit(("steam_api_key", val)))
+        self.settings.searchOptionsChanged.connect(lambda val: self.settingsValueChanged.emit(("search_options", val)))
+        # endregion
+
         self.searched_users = SearchedUsersModel(self.config.root_directory)
         self.searched_users.load_searched_users()
         self.settings.load_settings()
@@ -40,6 +67,27 @@ class CoreViewModel:
         self.peek_enabled = False
         self.output_info_dict = {}
 
+    def __getattr__(self, item):
+        return getattr(self.config, item)
+
+    def update_setting(self, key, value):
+        match key:
+            case "output_folder_path":
+                self.settings.output_folder_path = value
+            case "output_file_type":
+                self.settings.output_file_type = value
+            case "create_sub_folders":
+                self.settings.create_sub_folders = value
+            case "overwrite_enabled":
+                self.settings.overwrite_enabled = value
+            case "previous_parameters":
+                self.settings.previous_parameters = value
+            case "steam_api_key":
+                self.settings.steam_api_key = value
+            case "search_options":
+                self.settings.search_options = value
+            case _:
+                raise KeyError(f"Unknown setting key: {key}")
 
     def try_store_steam64id_from_vanity_id(self, input_id: str):
         # Check if we are dealing with a vanity url or an actual steam id
